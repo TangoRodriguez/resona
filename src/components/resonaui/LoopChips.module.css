@@ -1,0 +1,89 @@
+.loops {
+  width: 100%;
+}
+
+.label {
+  margin: 0 0 8px 4px;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--resona-text-muted);
+}
+
+.chipRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 12px 9px 14px;
+  border-radius: var(--resona-radius-pill);
+  background: var(--resona-glass-fill);
+  border: 1px solid var(--resona-glass-stroke);
+  backdrop-filter: blur(12px);
+  font-size: 13px;
+  color: var(--resona-text-primary);
+}
+
+.chipDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.chipDot[data-color="magenta"] {
+  background: var(--resona-magenta);
+  box-shadow: 0 0 8px var(--resona-magenta);
+}
+.chipDot[data-color="purple"] {
+  background: var(--resona-violet-glow);
+  box-shadow: 0 0 8px var(--resona-violet-glow);
+}
+.chipDot[data-color="blue"] {
+  background: var(--resona-blue-glow);
+  box-shadow: 0 0 8px var(--resona-blue-glow);
+}
+
+.chipTime {
+  color: var(--resona-text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.remove {
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  color: var(--resona-text-muted);
+  transition: color 0.2s ease, background 0.2s ease;
+}
+
+.remove:hover {
+  color: var(--resona-text-primary);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.add {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: var(--resona-radius-pill);
+  background: var(--resona-glass-fill);
+  border: 1px dashed var(--resona-glass-stroke);
+  color: var(--resona-text-secondary);
+  font-size: 20px;
+  line-height: 1;
+  transition: color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.add:hover {
+  color: var(--resona-text-primary);
+  box-shadow: var(--resona-glow-blue-soft);
+}

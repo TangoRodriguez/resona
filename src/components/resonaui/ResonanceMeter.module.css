@@ -1,0 +1,75 @@
+.meter {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  padding: 14px 18px;
+  border-radius: var(--resona-radius-md);
+  background: var(--resona-panel-fill);
+  border: 1px solid var(--resona-panel-stroke);
+  backdrop-filter: blur(14px);
+}
+
+.readout {
+  flex-shrink: 0;
+  line-height: 1.15;
+}
+
+.label {
+  display: block;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--resona-text-muted);
+}
+
+.value {
+  display: block;
+  font-size: 30px;
+  font-weight: 600;
+  background: linear-gradient(
+    180deg,
+    var(--resona-cyan-glow),
+    var(--resona-violet-glow)
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.caption {
+  display: block;
+  font-size: 12px;
+  color: var(--resona-text-secondary);
+}
+
+.bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  flex: 1;
+  height: 44px;
+}
+
+.bar {
+  flex: 1;
+  border-radius: 999px;
+  background: linear-gradient(
+    180deg,
+    var(--resona-violet-glow),
+    var(--resona-blue-core)
+  );
+  box-shadow: 0 0 8px rgba(140, 110, 255, 0.45);
+  transform-origin: bottom;
+  animation: resonate 1.8s ease-in-out infinite;
+}
+
+@keyframes resonate {
+  0%,
+  100% {
+    transform: scaleY(0.4);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}

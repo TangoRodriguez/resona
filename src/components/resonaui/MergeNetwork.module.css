@@ -1,0 +1,84 @@
+.networkWrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  max-height: 360px;
+  margin: 14px auto 4px;
+  display: grid;
+  place-items: center;
+}
+
+.svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.centerOrb {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: pulse 6s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    transform: scale(0.97);
+  }
+  50% {
+    transform: scale(1.04);
+  }
+}
+
+.link {
+  stroke-dasharray: 4 7;
+  animation: flow 3.2s linear infinite;
+}
+
+@keyframes flow {
+  to {
+    stroke-dashoffset: -44;
+  }
+}
+
+.particle {
+  animation: travel 5s ease-in-out infinite alternate;
+}
+
+@keyframes travel {
+  from {
+    opacity: 0.3;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.nodeGroup {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: nodeBreathe 5.5s ease-in-out infinite;
+}
+
+@keyframes nodeBreathe {
+  0%,
+  100% {
+    transform: scale(0.95);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+.nodeLabel {
+  font-size: 13px;
+  font-weight: 600;
+  fill: var(--resona-text-primary);
+}
+
+.nodeRole {
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  fill: var(--resona-text-muted);
+}

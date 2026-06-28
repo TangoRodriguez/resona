@@ -1,0 +1,101 @@
+:root {
+  --resona-bg-0: #02030a;
+  --resona-bg-1: #050816;
+  --resona-bg-2: #0a1024;
+  --resona-bg-3: #101735;
+
+  --resona-text-primary: #f4f7ff;
+  --resona-text-secondary: #a9b7ff;
+  --resona-text-muted: #6f789b;
+  --resona-text-faint: #3f4867;
+
+  --resona-blue-core: #3b6cff;
+  --resona-blue-glow: #5ea0ff;
+  --resona-cyan-glow: #7de7ff;
+
+  --resona-purple-core: #7a3dff;
+  --resona-violet-glow: #a06cff;
+  --resona-deep-violet: #4a1d9b;
+  --resona-magenta: #ff5aae;
+  --resona-recording-dot: #ff4f91;
+
+  --resona-glass-fill: rgba(80, 110, 255, 0.1);
+  --resona-glass-fill-strong: rgba(110, 140, 255, 0.18);
+  --resona-glass-stroke: rgba(160, 190, 255, 0.42);
+
+  --resona-panel-fill: rgba(8, 12, 28, 0.72);
+  --resona-panel-fill-strong: rgba(14, 18, 42, 0.86);
+  --resona-panel-stroke: rgba(130, 150, 255, 0.18);
+
+  --resona-radius-sm: 12px;
+  --resona-radius-md: 18px;
+  --resona-radius-lg: 28px;
+  --resona-radius-pill: 999px;
+  --resona-radius-panel: 28px;
+
+  --resona-glow-blue-soft: 0 0 24px rgba(80, 130, 255, 0.42);
+  --resona-glow-blue-strong: 0 0 48px rgba(80, 130, 255, 0.72);
+  --resona-glow-purple-soft: 0 0 24px rgba(140, 80, 255, 0.42);
+  --resona-glow-purple-strong: 0 0 54px rgba(160, 90, 255, 0.78);
+  --resona-glow-cyan-soft: 0 0 24px rgba(125, 231, 255, 0.36);
+  --resona-glow-magenta-ring: 0 0 36px rgba(255, 90, 174, 0.58);
+  --resona-glow-panel: 0 18px 60px rgba(0, 0, 0, 0.45);
+  --resona-glow-button: 0 0 32px rgba(88, 112, 255, 0.55);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  overscroll-behavior: none;
+  background: var(--resona-bg-0);
+  color: var(--resona-text-primary);
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  /* Center the mobile app shell on desktop. */
+  display: flex;
+  justify-content: center;
+  min-height: 100dvh;
+  background: radial-gradient(
+      120% 80% at 50% -10%,
+      rgba(58, 70, 160, 0.35) 0%,
+      rgba(10, 16, 36, 0) 55%
+    ),
+    radial-gradient(
+      100% 60% at 50% 110%,
+      rgba(120, 60, 200, 0.28) 0%,
+      rgba(5, 8, 22, 0) 60%
+    ),
+    var(--resona-bg-0);
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+  color: inherit;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}

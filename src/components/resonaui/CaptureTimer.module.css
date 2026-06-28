@@ -1,0 +1,45 @@
+.timerWrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.timer {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 42px;
+  font-weight: 400;
+  letter-spacing: 0.03em;
+  font-variant-numeric: tabular-nums;
+  color: var(--resona-text-primary);
+}
+
+.dot {
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: var(--resona-recording-dot);
+  box-shadow: var(--resona-glow-magenta-ring);
+  animation: recPulse 1.4s ease-in-out infinite;
+}
+
+@keyframes recPulse {
+  0%,
+  100% {
+    opacity: 0.6;
+    transform: scale(0.85);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.12);
+  }
+}
+
+.status {
+  margin: 0;
+  font-size: 14px;
+  letter-spacing: 0.04em;
+  color: var(--resona-text-secondary);
+}

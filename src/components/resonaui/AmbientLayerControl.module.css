@@ -1,0 +1,204 @@
+.wrap {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.compact {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 4px 4px 6px;
+  border-radius: var(--resona-radius-pill);
+  background: var(--resona-panel-fill);
+  border: 1px solid var(--resona-panel-stroke);
+  backdrop-filter: blur(12px);
+}
+
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px;
+  border-radius: var(--resona-radius-pill);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--resona-text-secondary);
+}
+
+.toggle[data-on="true"] {
+  color: var(--resona-text-primary);
+}
+
+.waveIcon {
+  display: inline-flex;
+  color: var(--resona-cyan-glow);
+  opacity: 0.55;
+}
+
+.toggle[data-on="true"] .waveIcon {
+  opacity: 1;
+}
+
+.label {
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+}
+
+.statePill {
+  padding: 2px 8px;
+  border-radius: var(--resona-radius-pill);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--resona-text-muted);
+  background: rgba(120, 140, 220, 0.12);
+}
+
+.statePill[data-on="true"] {
+  color: #02030a;
+  background: var(--resona-blue-glow);
+  box-shadow: var(--resona-glow-blue-soft);
+}
+
+.expand {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  color: var(--resona-text-muted);
+  transition: transform 0.2s ease, color 0.2s ease;
+}
+
+.expand[data-open="true"] {
+  transform: rotate(180deg);
+  color: var(--resona-text-primary);
+}
+
+.panel {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(320px, 88vw);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px;
+  border-radius: var(--resona-radius-panel);
+  background: var(--resona-panel-fill-strong);
+  border: 1px solid var(--resona-panel-stroke);
+  box-shadow: var(--resona-glow-panel);
+  backdrop-filter: blur(18px);
+  z-index: 20;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.rowLabel {
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: var(--resona-text-secondary);
+}
+
+.segmented {
+  display: inline-flex;
+  border-radius: var(--resona-radius-pill);
+  background: rgba(120, 140, 220, 0.12);
+  padding: 2px;
+}
+
+.segmented button {
+  padding: 5px 14px;
+  border-radius: var(--resona-radius-pill);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--resona-text-muted);
+}
+
+.segmented button[data-active="true"] {
+  color: #02030a;
+  background: var(--resona-blue-glow);
+}
+
+.tracks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.trackBtn {
+  padding: 5px 12px;
+  border-radius: var(--resona-radius-pill);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--resona-text-secondary);
+  background: rgba(120, 140, 220, 0.1);
+  border: 1px solid transparent;
+}
+
+.trackBtn[data-active="true"] {
+  color: var(--resona-text-primary);
+  border-color: rgba(150, 175, 255, 0.5);
+  box-shadow: var(--resona-glow-blue-soft);
+}
+
+.sliderRow {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sliderRow input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 4px;
+  border-radius: var(--resona-radius-pill);
+  background: linear-gradient(
+    90deg,
+    var(--resona-blue-glow),
+    var(--resona-violet-glow)
+  );
+  outline: none;
+}
+
+.sliderRow input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: var(--resona-glow-blue-soft);
+  cursor: pointer;
+}
+
+.sliderRow input[type="range"]::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border: none;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: var(--resona-glow-blue-soft);
+  cursor: pointer;
+}
+
+.hint {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--resona-text-muted);
+}

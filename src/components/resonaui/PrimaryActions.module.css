@@ -1,0 +1,78 @@
+.actions {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+}
+
+.button {
+  flex: 1;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 16px 0;
+  border-radius: var(--resona-radius-pill);
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--resona-text-primary);
+  border: 1px solid transparent;
+  transition: transform 0.18s ease, box-shadow 0.25s ease, filter 0.25s ease;
+  overflow: hidden;
+}
+
+.icon {
+  display: grid;
+  place-items: center;
+  position: relative;
+  z-index: 1;
+}
+
+.button::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.18),
+    rgba(255, 255, 255, 0)
+  );
+  pointer-events: none;
+}
+
+.button:active {
+  transform: translateY(1px) scale(0.99);
+}
+
+.capture {
+  background: linear-gradient(
+    135deg,
+    var(--resona-blue-core) 0%,
+    #567cff 100%
+  );
+  box-shadow: var(--resona-glow-button);
+}
+
+.merge {
+  background: linear-gradient(135deg, #5520b8 0%, #9b55ff 100%);
+  box-shadow: 0 0 32px rgba(140, 80, 255, 0.5);
+}
+
+/* Inactive (secondary) state — dimmer, glassy */
+.button[data-active="false"] {
+  filter: saturate(0.7) brightness(0.78);
+  opacity: 0.92;
+}
+
+.button[data-active="true"] {
+  filter: saturate(1.1) brightness(1.05);
+}
+
+.capture[data-active="true"] {
+  box-shadow: var(--resona-glow-button), var(--resona-glow-blue-strong);
+}
+
+.merge[data-active="true"] {
+  box-shadow: var(--resona-glow-purple-strong);
+}

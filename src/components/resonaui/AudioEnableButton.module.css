@@ -1,0 +1,32 @@
+.enable {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 16px;
+  border-radius: var(--resona-radius-pill);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--resona-text-primary);
+  background: linear-gradient(
+    180deg,
+    rgba(96, 122, 255, 0.4),
+    rgba(60, 80, 220, 0.28)
+  );
+  border: 1px solid rgba(150, 175, 255, 0.45);
+  box-shadow: var(--resona-glow-button);
+  transition: transform 0.15s ease, box-shadow 0.2s ease;
+}
+
+.enable:hover {
+  transform: translateY(-1px);
+}
+
+.enable:active {
+  transform: translateY(0);
+}
+
+.icon {
+  display: inline-flex;
+  color: var(--resona-cyan-glow);
+}
