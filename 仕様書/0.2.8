@@ -1,0 +1,1074 @@
+# RESONA Phase 0.2.8 — r3f Visual Matter Quality Overhaul
+
+現在のRESONAは、r3f / Three.js を導入して3D化されていますが、中央のSound Matter visualがまだかなり安っぽく見えます。
+
+現状の問題は以下です。
+
+* Canvas領域の背景が四角く見えており、アプリ全体の背景と一体化していない
+* 中央オブジェクトが「3Dの透明物質」ではなく、単純な球・楕円・線の集合に見える
+* Glass / Liquid / Bloom の質感差はあるが、どれも淡く平面的で、高級感がない
+* ガラスの屈折、反射、Fresnel rim、内部反射、エミッション、Bloomが弱い
+* 内部構造が単純な軌道線や楕円に見える
+* リファレンス画像のような「透明球の中に光のリボンやレンズが閉じ込められている」感じが出ていない
+* 色彩が淡く、青・紫・白・シアンのコントラストが弱い
+* ポリゴンや3D構造体としての複雑さが見えない
+* 球体の中が空っぽ、または白くぼやけているだけに見える
+* 軌道線が大きすぎたり単純すぎたりして、チープなSF UIに見える
+
+今回の目的は、機能追加ではありません。
+**中央のSound Matter visualのLook Developmentを徹底的に改善すること**です。
+
+最終的に、リファレンス画像のような以下の印象を目指してください。
+
+* 黒〜深紺の背景に、透明な青紫の3Dガラス球が浮いている
+* 外周には白〜水色の強いFresnel rimがある
+* 球の内部に、半透明のリボン、レンズ面、青紫の反射、白いハイライトが何層も重なっている
+* 球体がただの円ではなく、厚みと奥行きのある透明物質に見える
+* 発光している部分がBloomで美しくにじむ
+* 色は淡いだけでなく、暗部・中間色・強い発光点のコントラストがある
+* 軌道線は2D線ではなく、球の前後を通る3D空間の軌道に見える
+* Glass / Liquid / Bloom がそれぞれ異なる3D物性として成立している
+* UI全体は既存の上品さを保ちつつ、中央ビジュアルだけが圧倒的に美しい
+
+---
+
+# 1. 最優先修正：Canvas背景の四角を消す
+
+現在、r3f Canvasの描画領域が四角い背景として見えてしまっています。
+これはRESONAの没入感を大きく壊しています。
+
+必ず以下を修正してください。
+
+## 要件
+
+* r3f Canvasは完全に透明背景にする
+* Canvas wrapperに独立した四角い背景色を置かない
+* 既存のアプリ背景グラデーションと自然に一体化させる
+* 中央の3Dオブジェクトだけが浮いて見えるようにする
+* Canvasの端が見えないようにする
+* postprocessing後も背景が四角く残らないようにする
+
+## 実装ヒント
+
+Canvas設定：
+
+```tsx
+<Canvas
+  gl={{
+    alpha: true,
+    antialias: true,
+    powerPreference: "high-performance",
+    premultipliedAlpha: false
+  }}
+  onCreated={({ gl }) => {
+    gl.setClearColor(0x000000, 0);
+  }}
+>
+```
+
+CSS側：
+
+```css
+.soundMatterCanvas,
+.soundMatterCanvas canvas {
+  background: transparent !important;
+}
+
+.soundMatterCanvas {
+  overflow: visible;
+}
+```
+
+EffectComposerを使っている場合、背景が黒や四角に塗られていないか確認してください。
+
+もしpostprocessingが透明背景を壊す場合は、まず背景透明を優先し、必要ならBloomだけ残して他のpostprocessを一時的に外してください。
+
+完了条件：
+
+* スマホで見ても、中央ビジュアライザー領域の四角い背景が一切見えない
+* アプリ全体の背景と完全に溶け込んでいる
+* 3Dオブジェクトだけが浮いている
+
+---
+
+# 2. 最優先修正：Glassを最初に本気で作る
+
+GlassがRESONAのメインビジュアルです。
+Liquid / Bloom は後で派生させて構いません。
+まずGlassをリファレンス画像に近い品質まで上げてください。
+
+現在のGlassは、単純な球と線に見えます。
+次の多層構造に作り直してください。
+
+```txt
+GlassMatter
+  ├─ OuterGlassShell
+  ├─ FresnelRimShell
+  ├─ InnerGlowVolume
+  ├─ InternalRibbonSurfaces
+  ├─ InternalLensSheets
+  ├─ SpecularHighlightPlanes
+  ├─ CausticFilaments
+  ├─ ChromaticEdgeShells
+  ├─ OrbitalField
+  └─ SparkParticles
+```
+
+単一のSphereGeometryだけで終わらせないでください。
+Glassは少なくとも7〜10個程度の視覚レイヤーで構成してください。
+
+---
+
+# 3. Glass Layer 1 — OuterGlassShell
+
+外側の透明球を作ってください。
+
+## 目的
+
+* ガラスの外殻
+* 透明な厚み
+* 球体としての存在感
+* 光を受ける外周
+
+## 要件
+
+* 高分割SphereGeometryを使う
+* MeshPhysicalMaterial または drei の MeshTransmissionMaterial を使う
+* 透明度は高いが、完全に見えないのはNG
+* roughnessは低め
+* clearcoatを強める
+* transmission / thickness / ior を設定する
+* 外周の輪郭が見えるようにする
+
+## 目安パラメータ
+
+```ts
+const outerGlassMaterial = {
+  transparent: true,
+  opacity: 0.28,
+  roughness: 0.03,
+  metalness: 0,
+  clearcoat: 1.0,
+  clearcoatRoughness: 0.03,
+  transmission: 0.85,
+  thickness: 1.2,
+  ior: 1.45,
+  color: "#8fb8ff",
+  emissive: "#102b88",
+  emissiveIntensity: 0.04
+};
+```
+
+標準Materialだけで質感が弱い場合は、`MeshTransmissionMaterial` を優先してください。
+
+---
+
+# 4. Glass Layer 2 — FresnelRimShell
+
+現在のGlassは輪郭が弱く、透明球の厚みが出ていません。
+外周のFresnel rimを必ず追加してください。
+
+## 実装方法
+
+以下のどちらかで実装してください。
+
+### 方法A：ShaderMaterial
+
+view direction と normal の内積から Fresnel を計算する。
+
+擬似式：
+
+```glsl
+float fresnel = pow(1.0 - dot(normalize(vNormal), normalize(vViewPosition)), 2.5);
+```
+
+### 方法B：BackSideの大きめ球を重ねる
+
+* 外殻より少し大きい球
+* BackSide表示
+* AdditiveBlending
+* 青白〜紫の透明発光
+* Fresnelっぽく外周だけ光るようにする
+
+## 目標
+
+* 球の外周が白〜水色に強く発光している
+* ただし均一な円ではなく、少し色の揺らぎがある
+* 青、シアン、紫がほんの少しずれて重なり、色収差っぽく見える
+
+---
+
+# 5. Glass Layer 3 — InnerGlowVolume
+
+今の中心は白く飛びすぎ、または単なる発光円に見えます。
+内部に体積感のある発光コアを作ってください。
+
+## 要件
+
+* 球の中心に小さな発光コア
+* 青〜紫〜白のグラデーション感
+* AdditiveBlending
+* levelに応じて明るさとscaleが変化
+* 完全な白飛びを避ける
+* 球の奥から光っているように見せる
+
+## 実装案
+
+* 小さなemissive sphere
+* さらにその周りに半透明の大きめglow sphere
+* Spriteやplaneによるsoft glowを追加してもよい
+
+## 目標
+
+中央に光源があるが、球全体がただ白くなるのではなく、
+**青紫の内部空間が照らされているように見えること。**
+
+---
+
+# 6. Glass Layer 4 — InternalRibbonSurfaces
+
+ここが最重要です。
+現在の内部線はチープに見えます。
+線ではなく、半透明のリボン面を球の内部に入れてください。
+
+## 要件
+
+* CatmullRomCurve3などで3D曲線を作る
+* その曲線に沿ってTubeGeometryではなく、できれば「幅のあるribbon mesh」を作る
+* 2〜5本のリボンを球内部に配置
+* 球の中を斜めに横切る
+* それぞれ角度・曲率・速度を変える
+* 青、紫、白、水色の半透明発光にする
+* AdditiveBlendingまたはtransparent materialを使う
+* リボンは線ではなく、薄い面として見える必要がある
+* levelが上がると発光と揺れが少し増える
+* pitchがある場合はリボンの高さや色が少し変わる
+
+## 見た目
+
+リファレンス画像のように、
+透明球の内部に、光の帯が何層も屈折しているように見えること。
+
+## 避けること
+
+* ただの細い白線
+* ただの楕円
+* 球の表面に貼り付いた線
+* 中心だけでぐるぐるする線
+* 太すぎるチューブ
+
+## 実装の方向
+
+関数を作ってください。
+
+```ts
+createRibbonGeometry(curve, width, segments)
+```
+
+各点で接線とカメラ方向または法線方向から左右の頂点を作り、細長い面として描画してください。
+
+---
+
+# 7. Glass Layer 5 — InternalLensSheets
+
+リファレンス画像のように、球の中にもう一枚、透明なレンズや膜がある感じを出してください。
+
+## 要件
+
+* 半透明の楕円面を2〜3枚
+* 球の内部で斜めに配置
+* 青紫の薄いグラデーション感
+* opacity 0.05〜0.18
+* ゆっくり回転
+* edgeだけが少し光る
+* 内部リボンと重なって見える
+
+## 目標
+
+球の中が空っぽではなく、
+**透明な面が何層も折り重なっている**ように見えること。
+
+---
+
+# 8. Glass Layer 6 — SpecularHighlightPlanes
+
+今の質感は反射が弱く、ガラスらしくありません。
+白〜水色のスペキュラーハイライトを明示的に入れてください。
+
+## 要件
+
+* 球表面近くに、ぼかした楕円形の白いハイライトを配置
+* 1〜3個
+* 上左、右下など非対称配置
+* 完全な円ではなく細長い楕円またはカーブ
+* AdditiveBlending
+* alpha低め
+* ゆっくり動く
+
+## 目標
+
+リファレンス画像のように、
+**表面に強い光沢が乗っている**ように見えること。
+
+---
+
+# 9. Glass Layer 7 — CausticFilaments
+
+内部に細い光の筋を追加してください。
+
+## 要件
+
+* 細い曲線を複数
+* 水色、青白、薄紫
+* opacity低め
+* 内部リボンよりさらに細い
+* ノイズでゆらぐ
+* 球内部を走る
+* levelが上がると少し明るくなる
+
+## 目標
+
+水中の光やガラス内部の屈折線のような、
+**細かい光の情報量**を増やす。
+
+---
+
+# 10. Glass Layer 8 — ChromaticEdgeShells
+
+色収差をほんの少し入れてください。
+
+## 要件
+
+* 青側の外周rim
+* 紫側の外周rim
+* わずかに位置やスケールをずらす
+* 強すぎない
+* 参考画像のようなレンズ感を補強する程度
+
+## 注意
+
+色収差が強すぎると安っぽくなるので、かなり控えめにしてください。
+
+---
+
+# 11. OrbitalFieldの改善
+
+現在の軌道線は大きすぎたり、単純な楕円に見えます。
+軌道線は主役ではなく、Glassを引き立てる周辺場にしてください。
+
+## 要件
+
+* 線を細くする
+* opacityを下げる
+* 球の前後を通るように3D的に傾ける
+* 完全な楕円ではなく、わずかに歪んだ曲線にする
+* 一部だけ明るいarcを入れる
+* 小さな光点を数個だけ周回させる
+* 線が多すぎて球の質感を邪魔しないようにする
+
+## 避けること
+
+* 巨大な楕円が画面全体を横切る
+* 線が太すぎる
+* 軌道線が主役になる
+* Bloomより目立つ
+
+---
+
+# 12. 色彩改善
+
+現在の色彩は淡く、コントラストが弱いです。
+
+以下の色階層を意識してください。
+
+```txt
+暗部:
+  #02030A
+  #050816
+
+深い中間色:
+  #07133A
+  #102A7A
+  #24115F
+
+発光青:
+  #3B6CFF
+  #5EA0FF
+  #7DE7FF
+
+発光紫:
+  #7A3DFF
+  #A06CFF
+  #D49BFF
+
+白ハイライト:
+  #F4F8FF
+  #DCEAFF
+
+録音アクセント:
+  #FF5AAE
+  #FF79C6
+```
+
+## 要件
+
+* 全体を明るくしすぎない
+* 暗部をしっかり残す
+* ハイライトは少数だが強くする
+* 発光部分はBloomでにじませる
+* 白飛びしすぎない
+* 淡いパステルだけで終わらせない
+* 青紫の中にも深い黒に近い部分を残す
+
+---
+
+# 13. Lighting改善
+
+現在のシーンはライトが弱いか、材質に効いていない可能性があります。
+
+## 要件
+
+* AmbientLightは弱め
+* DirectionalLightで白いハイライトを作る
+* Blue PointLight
+* Purple PointLight
+* 必要ならEnvironmentを入れる
+* 透明体が光を拾っているようにする
+
+例：
+
+```tsx
+<ambientLight intensity={0.08} />
+<directionalLight
+  position={[2.5, 3.5, 3]}
+  intensity={1.6}
+  color="#EAF2FF"
+/>
+<pointLight
+  position={[-2.5, 1.5, 2.5]}
+  intensity={2.4}
+  color="#5EA0FF"
+/>
+<pointLight
+  position={[2.2, -1.7, 2]}
+  intensity={1.9}
+  color="#A06CFF"
+/>
+```
+
+Environmentが使える場合は、暗い環境の中に明るい反射源があるようにしてください。
+
+---
+
+# 14. Postprocessing改善
+
+Bloomが弱すぎる、または全体をぼかしているだけになっている可能性があります。
+
+## 要件
+
+* 発光部分だけがきれいににじむようにする
+* 全体を白くぼかさない
+* Bloomのthresholdを調整する
+* ChromaticAberrationは控えめにする
+* VignetteはUI背景と合う程度にする
+
+例：
+
+```tsx
+<EffectComposer>
+  <Bloom
+    intensity={1.15}
+    luminanceThreshold={0.25}
+    luminanceSmoothing={0.55}
+  />
+  <ChromaticAberration offset={[0.0006, 0.0009]} />
+  <Vignette eskil={false} offset={0.12} darkness={0.28} />
+</EffectComposer>
+```
+
+スマホで重い場合は、Bloomのみ残してください。
+
+---
+
+# 15. Liquid改善
+
+Liquidは現在、青い球と線に見えています。
+Glassの派生ではなく、流体として見えるようにしてください。
+
+## 要件
+
+* 球の輪郭をnoiseでゆっくり変形
+* ただし形が崩れすぎない
+* 内部に水面のような境界面を複数入れる
+* caustic線を入れる
+* 表面ハイライトを柔らかくする
+* Glassよりrimは柔らかくする
+* 青の比率を上げる
+* levelが上がると波の振幅や内部流れが増える
+
+## 見た目
+
+* 透明な水球
+* 内部で水面が揺れている
+* 光が水中で屈折している
+* 球の表面がぷるっとしている
+
+---
+
+# 16. Bloom改善
+
+Bloomは現在、平面的な花・淡い円に見えます。
+Bloomは「花アイコン」ではなく、「半透明膜の開花」として作ってください。
+
+## 要件
+
+* 花弁を線ではなく面として描く
+* 8〜14枚の半透明petal membrane
+* それぞれを少し違う角度で3D配置
+* 中央の発光コア
+* petalの縁を淡く光らせる
+* 紫、ピンク、青を使う
+* levelで花弁の開きが変わる
+* capture中はmagenta melody traceが膜の間を通る
+
+## 見た目
+
+* 光る透明膜の花
+* オーロラのように重なる
+* 単純な2D花アイコンに見えない
+
+---
+
+# 17. 3D幾何の高度化
+
+今後、複雑で美しい造形にするため、以下のような関数・生成系を導入してください。
+
+## 推奨関数
+
+```ts
+createRibbonGeometry(curve, width, segments)
+createLensSheetGeometry(radiusX, radiusY, segments)
+createPetalGeometry(length, width, curvature, segments)
+createDistortedSphereGeometry(radius, segments, noiseAmount)
+createOrganicOrbitCurve(radius, tilt, noiseAmount)
+```
+
+## 推奨ノイズ
+
+* simplex noise
+* fbm
+* curl noise風のベクトル場
+* time-based smooth noise
+
+## 目的
+
+* 単純な円や楕円をやめる
+* 滑らかな非線形曲面を作る
+* 音量やpitchで自然に形が変わる
+* 3D構造物として情報量を増やす
+
+---
+
+# 18. Audio-reactive mapping
+
+まだ本格音声入力がなくても、以下のpropsで見た目が変わる構造を維持してください。
+
+```ts
+type Matter3DParams = {
+  level: number;
+  pitch?: number | null;
+  pitchConfidence?: number;
+  resonance: number;
+  isRecording: boolean;
+  elapsedSeconds: number;
+};
+```
+
+## Mapping
+
+level:
+
+* InnerGlowCore brightness
+* ribbon emissive intensity
+* Liquid wave amplitude
+* Bloom petal openness
+* orbital dot speed
+
+pitch:
+
+* ribbon vertical offset
+* color shift
+* melody trace height
+* specular highlight position
+
+isRecording:
+
+* magenta recording ring
+* melody trace
+* stronger pulse
+
+resonance:
+
+* orbit stability
+* central convergence
+* merge visual intensity
+
+---
+
+# 19. Mobile performance
+
+スマホで確認するため、重くなりすぎないようにしてください。
+
+## 要件
+
+* dprは `[1, 2]`
+* particlesは少数
+* geometry segmentを上げすぎない
+* postprocessingは必要最小限
+* quality modeを用意してもよい
+
+```ts
+type VisualQuality = "high" | "medium" | "low";
+```
+
+最初はhighでよいですが、スマホで重ければmediumに落とせる構造にしてください。
+
+---
+
+# 20. 実装順序
+
+必ずこの順に進めてください。
+
+1. Canvas背景の四角を完全に消す
+2. GlassのOuterGlassShellを改善
+3. FresnelRimShellを追加
+4. InnerGlowVolumeを追加
+5. InternalRibbonSurfacesを追加
+6. InternalLensSheetsを追加
+7. SpecularHighlightPlanesを追加
+8. CausticFilamentsを追加
+9. ChromaticEdgeShellsを追加
+10. OrbitalFieldを控えめに高級化
+11. Lightingを調整
+12. Bloom/Postprocessingを調整
+13. LiquidをGlass派生から流体物性へ改善
+14. Bloomを半透明膜へ改善
+15. スマホで確認
+16. `npm run build`
+
+---
+
+# 21. 完了条件
+
+この修正の完了条件は以下です。
+
+* Canvas領域の四角い背景が完全に消えている
+* Glassが単なる青い球ではなく、透明な3Dガラス球に見える
+* 球の外周にFresnel rimがある
+* 球の内部にリボン、レンズ面、ハイライト、細い光の筋がある
+* 発光部分がBloomで美しくにじんでいる
+* 色彩が淡いだけでなく、暗部と発光のコントラストがある
+* 軌道線が主役にならず、球の周辺場として機能している
+* Liquidが流体球に見える
+* Bloomが半透明膜の開花に見える
+* 2Dの円や楕円の組み合わせには見えない
+* スマホで確認しても極端に重くない
+* `npm run build` が成功する
+
+---
+
+# 22. 最終的な見た目の目標
+
+実装後、RESONAの中央Sound Matterは以下のように見えるべきです。
+
+暗い青紫のUIの中央に、透明なガラス球が浮いている。
+球の外周は白〜水色に薄く鋭く光り、内部には青紫の光のリボンが斜めに重なっている。
+球の中にはもう一枚の透明なレンズ面があり、光が屈折しているように見える。
+中央には青白い発光コアがあり、声や音量に応じて呼吸する。
+少数の光点が球の周囲を回り、薄い軌道線が前後に通る。
+Capture中はマゼンタのリングとメロディラインが球の外側を滑る。
+全体として、2Dの図形ではなく、**音が透明な3D物質として存在している**ように感じる。
+
+この品質を目指してください。
+
+# RESONA Phase 0.2.8 Addendum — Image-Quality Glass Lookdev Lock
+
+先ほどの `RESONA Phase 0.2.8 — r3f Visual Matter Quality Overhaul` に加えて、以下を必ず反映してください。
+
+重要な前提：
+通常のr3f実装で、透明球・リング・線・Bloomを置くだけでは、目標リファレンス画像の品質には届きません。
+目標は「物理的に正しいガラスシミュレーション」ではなく、**スマホ画面上で見たときに、生成リファレンス画像のような高級な透明ガラスオーブに見えること**です。
+
+したがって、物理正確性よりも、見た目の説得力を優先してください。
+
+---
+
+# 1. Reference imageを明確に参照する
+
+以下の画像を、RESONA Glass visualの最重要ターゲットとして扱ってください。
+
+```txt
+docs/design/references/05-target-glass-orb.png
+```
+
+まだ存在しない場合は、ユーザーが提供した生成画像をこのパスに保存する想定で実装してください。
+
+この画像の特徴：
+
+* 黒〜深紺背景に、透明な青紫のガラス球が浮いている
+* 球の外周が強い白〜シアンのrim lightで光っている
+* 内部に複数の青紫リボンが斜めに重なる
+* 白い強いスペキュラーハイライトが球表面にある
+* 中心に青白い発光コアがある
+* 球の内部にレンズ面のような半透明構造がある
+* 軌道線は細く、球の前後を通っているように見える
+* 全体にBloomがかかっているが、暗部はしっかり残っている
+* 平面的な円ではなく、厚みのある透明体に見える
+
+この品質に近づけることを最優先してください。
+
+---
+
+# 2. Proceduralだけで作ろうとしない
+
+重要：
+すべてを純粋な3Dメッシュや数学関数だけで作ろうとしないでください。
+リファレンス画像のような見た目に近づけるためには、**2.5D的なlookdevの嘘**を積極的に使ってください。
+
+使用してよい表現：
+
+* transparent planes
+* additive sprites
+* alpha gradient textures
+* radial glow textures
+* caustic texture planes
+* matcap-like highlight overlays
+* fake reflection planes
+* Fresnel shell
+* environment-like gradient reflection
+* semi-transparent ribbon meshes
+* screen-facing highlight sprites
+* postprocessing bloom
+
+目的は「正しい物理」ではなく、**見た目として高級な透明ガラス球に見えること**です。
+
+---
+
+# 3. Glass Orbを最低10レイヤーで構成する
+
+GlassMatterは、単一のSphereGeometryや少数の線で構成しないでください。
+最低でも以下の10レイヤーを入れてください。
+
+```txt
+GlassMatter
+  01 Outer transparent shell
+  02 Fresnel rim shell
+  03 Inner dark blue volume shell
+  04 Central emissive core
+  05 Large internal lens sheet
+  06 Secondary internal lens sheet
+  07 Wide translucent ribbon surface A
+  08 Wide translucent ribbon surface B
+  09 Thin caustic filament group
+  10 Specular highlight sprite / plane group
+  11 Chromatic edge shell
+  12 Orbital rings and orbit particles
+```
+
+特に重要なのは以下です。
+
+* `Outer transparent shell`
+* `Fresnel rim shell`
+* `Internal lens sheets`
+* `Wide translucent ribbon surfaces`
+* `Specular highlight planes`
+* `Central emissive core`
+
+この6つが弱い場合、見た目は必ず安っぽくなります。
+
+---
+
+# 4. “線”ではなく“面”を増やす
+
+現在の安っぽさの大きな原因は、内部構造が線に見えることです。
+
+必ず、以下を守ってください。
+
+## NG
+
+* 細いLineだけで内部リボンを表現する
+* 単純な楕円リングだけを重ねる
+* 白い線を球の表面に貼る
+* 軌道線を太くしてごまかす
+
+## OK
+
+* 幅のあるribbon mesh
+* 半透明のlens sheet
+* curved transparent plane
+* alpha gradient plane
+* additive glow membrane
+* soft highlight sprite
+
+つまり、内部構造は「線」ではなく、**面・膜・リボン・レンズ**として作ってください。
+
+---
+
+# 5. Internal Ribbon Surfaceの仕様を強化する
+
+`InternalRibbons` は最重要です。
+
+次のようなribbonを最低2〜4枚作ってください。
+
+## Ribbon A
+
+* 球内部を左下から右上へ横切る
+* 幅広め
+* 青〜シアン
+* opacity 0.18〜0.35
+* additive blending
+* 中央付近だけ強く光る
+* 外側に行くほど透明になる
+
+## Ribbon B
+
+* 球内部を右下から左上へ横切る
+* 紫〜マゼンタ
+* opacity 0.12〜0.28
+* Ribbon Aと交差する
+* 交差部分に淡い白いglowを入れる
+
+## Ribbon C
+
+* 奥側に薄く配置
+* 暗い青
+* あまり目立たない
+* 球内部の奥行きを作る
+
+## 実装要件
+
+* CatmullRomCurve3で中心曲線を作る
+* その曲線に沿ったribbon geometryを作る
+* TubeGeometryだけでなく、幅のあるstrip meshを使う
+* 頂点カラーまたは透明度で端をフェードさせる
+* ShaderMaterialでもよい
+* texture alpha gradientを使ってもよい
+
+---
+
+# 6. Specular Highlightを絶対に入れる
+
+参考画像の高級感は、白く鋭い反射ハイライトでかなり作られています。
+
+以下を追加してください。
+
+## Highlight A
+
+* 球の左上表面
+* 大きめの白〜シアンの楕円ハイライト
+* screen-facing planeでもよい
+* additive blending
+* opacity 0.35〜0.65
+* blur感のあるグラデーション
+
+## Highlight B
+
+* 球の右下または下部
+* 細長いカーブ状の白ハイライト
+* 紫とシアンが少し混ざる
+
+## Highlight C
+
+* 外周rim上の小さい強い発光点
+* 2〜4個
+
+重要：
+ハイライトは「完全な白い円」ではなく、**細長い楕円・曲線・リボン状反射**にしてください。
+
+---
+
+# 7. Fresnel Rimをもっと強くする
+
+外周rimが弱いと透明球に見えません。
+
+要件：
+
+* 白〜シアンの強いrim
+* 紫のサブrim
+* 複数シェルを少しずらして重ねる
+* rimの一部だけ強く光る
+* Bloomに反応する明るさ
+* ただし全周均一な白リングにはしない
+
+実装方法：
+
+* Fresnel shader
+* BackSide additive sphere
+* torus-like partial arc
+* chromatic shifted shells
+
+どれでも構いません。
+
+---
+
+# 8. Internal Lens Sheetsを明確に見せる
+
+球の中に、もう一枚大きな透明レンズが入っているようにしてください。
+
+## Lens Sheet A
+
+* 大きな楕円透明面
+* 球内部に斜め配置
+* 左上から右下へ傾く
+* 青〜紫
+* opacity 0.10〜0.22
+* edgeだけ少し光る
+
+## Lens Sheet B
+
+* 小さめ
+* 反対方向に傾く
+* ほぼ透明
+* ハイライトを受ける
+
+これにより、球内部の奥行きと屈折感を作ります。
+
+---
+
+# 9. Caustics / Filamentsを追加する
+
+内部の情報量が不足しています。
+細い発光フィラメントを足してください。
+
+仕様：
+
+* 8〜20本程度
+* 非常に細い
+* 水色、青白、薄紫
+* opacity低め
+* 球内部を流れる
+* noiseで少し揺らぐ
+* 中央に近いほど明るい
+* levelに少し反応する
+
+ただし、主役にはしない。
+あくまでガラス内部の光の細部として扱ってください。
+
+---
+
+# 10. Background integrationを優先する
+
+Canvasの四角背景は絶対に消してください。
+
+さらに、中央の3Dオブジェクトの背後に、Canvas内ではなく、既存UI背景になじむような非常に薄いradial glowを置いてください。
+
+要件：
+
+* Canvas背景はtransparent
+* ただしオーブの背後にはsoft blue/purple glow
+* glowは四角く切れない
+* アプリ背景と連続する
+* 端が見えない
+* Canvas wrapperの背景色はなし
+
+---
+
+# 11. Postprocessingは“Bloom対象”を意識する
+
+Bloomはただ全体をぼかすのではなく、明るい部分だけをにじませてください。
+
+Bloom対象にするべき要素：
+
+* central emissive core
+* fresnel rim
+* specular highlights
+* bright ribbon intersections
+* orbit particles
+
+Bloom対象にしすぎない要素：
+
+* whole sphere fill
+* background
+* UI text
+* Matter selector
+* level meter
+
+必要なら3Dシーン内だけEffectComposerを使い、UIには影響しないようにしてください。
+
+---
+
+# 12. Color / Contrastを強化する
+
+現在の問題：
+全体が淡く白っぽく、眠い見た目です。
+
+修正方針：
+
+* 暗部をしっかり黒〜濃紺に残す
+* 中央コアだけ明るくする
+* rimとhighlightだけ強く光らせる
+* sphere fillは暗めの青紫を残す
+* 白い面積を増やしすぎない
+* cyanとpurpleの差を明確にする
+
+推奨：
+
+```ts
+const glassPalette = {
+  darkBlue: "#020718",
+  deepBlue: "#061C5F",
+  coreBlue: "#245CFF",
+  glowCyan: "#7DE7FF",
+  rimWhite: "#F5FAFF",
+  violet: "#7A3DFF",
+  magenta: "#D769FF"
+};
+```
+
+---
+
+# 13. If pure r3f still looks weak, use hybrid image-assisted layers
+
+もしr3fだけでリファレンス画像の質感に近づかない場合は、ハイブリッド方式を使ってください。
+
+許可する方法：
+
+* target orb referenceをもとにした、透明PNGのglow/rim textureを重ねる
+* caustics textureを半透明planeとして球内部に置く
+* specular highlight textureをspriteとして置く
+* matcap textureでガラス反射を補う
+* generated-looking highlight overlayを薄く重ねる
+
+重要：
+これは手抜きではありません。
+スマホWebで高級な透明ガラス感を出すための実用的なlookdevです。
+
+---
+
+# 14. Debug / comparison modeを追加してもよい
+
+可能なら、開発中だけ以下の比較モードを用意してください。
+
+```ts
+type VisualDebugMode = "current" | "targetComparison";
+```
+
+または単純に、参照画像を `docs/design/references/05-target-glass-orb.png` として見ながら調整できるよう、コメントやREADMEに比較手順を書いてください。
+
+---
+
+# 15. Completion criteria
+
+このAddendumを含めた0.2.8の完了条件：
+
+* Glassが「青い半透明球」ではなく「多層の透明ガラスオーブ」に見える
+* 内部構造が線ではなく、リボン・膜・レンズとして見える
+* 白〜シアンの強いspecular highlightがある
+* Fresnel rimが明確に出ている
+* 球内部に奥行きがある
+* 発光点がBloomで美しくにじむ
+* 暗部が残り、コントラストがある
+* Canvasの四角背景が完全に消えている
+* スマホで見て、現在のスクショより明らかに高級感がある
+* 参考画像の「透明な音の物質」感に近づいている
+* `npm run build` が通る

@@ -1,0 +1,706 @@
+# Copilot Instructions for RESONA
+
+This repository implements **RESONA**, a web-based interactive music app.
+
+RESONA is an app where voice, touch, melody, loops, and synced users become **visual matter**.
+
+Read this file before making implementation decisions.
+
+---
+
+# 1. Product identity
+
+## 1.1 What RESONA is
+
+RESONA is a mobile-first interactive music interface.
+
+Core idea:
+
+> Sound becomes matter.
+
+The app transforms:
+
+* voice into instrument sounds
+* humming into melodic traces
+* recordings into orbiting loops
+* touch gestures into sonic events
+* multiple users into a shared resonant visual/music space
+
+The UI should feel like users are touching sound, not operating a normal recording tool.
+
+---
+
+## 1.2 What RESONA is not
+
+Do not make RESONA look or behave like:
+
+* a generic dashboard
+* a SaaS analytics app
+* a conventional DAW
+* a mixer
+* a piano-roll editor
+* a waveform editor
+* a normal voice recorder
+* a generic audio visualizer
+* a cyberpunk control panel full of tiny controls
+
+Avoid:
+
+* too many sliders
+* too many panels
+* flat gray UI
+* bright white backgrounds
+* cluttered controls
+* cartoonish effects
+* harsh neon overload
+* generic Tailwind landing-page aesthetics
+
+---
+
+# 2. Visual direction
+
+The UI must feel:
+
+* premium
+* futuristic
+* minimal
+* dark
+* glassmorphic
+* blue/purple gradient based
+* softly glowing
+* calm
+* healing
+* interactive
+* high-end
+* emotionally musical
+
+The closest visual keywords are:
+
+* luminous glass
+* liquid light
+* sound sculpture
+* dark luxury
+* soft sci-fi
+* ambient instrument
+* touchable resonance
+
+---
+
+# 3. Reference images
+
+Use these images as visual references:
+
+```txt
+docs/design/references/01-solo-glass.png
+docs/design/references/02-capture-glass.png
+docs/design/references/03-merge-room.png
+docs/design/references/04-liquid-mode.png
+```
+
+They define the visual language for:
+
+1. Solo Glass screen
+2. Capture / recording screen
+3. Merge / multi-user resonance screen
+4. Liquid material mode
+
+When implementing UI, preserve the shared design system across all states.
+
+---
+
+# 4. Implementation priority
+
+## 4.1 First goal
+
+The first goal is to create a static or semi-interactive UI prototype that visually matches the reference images.
+
+Do not implement real microphone input, pitch detection, recording, WebSocket syncing, or audio synthesis until the UI is close to the references.
+
+## 4.2 Recommended phase order
+
+### Phase 0.1
+
+Static UI:
+
+* Solo Glass screen
+* Capture screen
+* Merge screen
+* Liquid mode
+* state switching using buttons
+* mock level meter
+* mock resonance meter
+* mock loop chips
+* mock participants
+
+### Phase 0.2
+
+Interactive UI mock:
+
+* pointer interactions
+* animated central orb
+* animated level meter
+* animated recording ring
+* animated resonance network
+* matter switching
+
+### Phase 0.3
+
+Local audio:
+
+* microphone permission
+* volume detection
+* pitch detection
+* simple voice-to-synth mapping
+
+### Phase 0.4
+
+Capture and loop:
+
+* real recording
+* loop creation
+* loop playback
+* orbit visualization
+
+### Phase 0.5
+
+Merge room:
+
+* WebSocket rooms
+* shared state
+* participant nodes
+* resonance score
+
+---
+
+# 5. Recommended stack
+
+Prefer:
+
+* Next.js
+* React
+* TypeScript
+* Tailwind CSS or CSS Modules
+* Framer Motion only if useful and not excessive
+* SVG/CSS/Canvas for the first central visual
+* Three.js later only if needed
+
+Do not introduce complex dependencies unless needed.
+
+For the first prototype, CSS/SVG layers are enough to imitate the orb and rings.
+
+---
+
+# 6. Main components
+
+Use this component structure unless there is a strong reason to change it:
+
+```txt
+src/
+  app/
+    page.tsx
+    layout.tsx
+
+  components/
+    resonaui/
+      ResonanceApp.tsx
+      AppShell.tsx
+      Header.tsx
+      TopControls.tsx
+      SoundMatterCanvas.tsx
+      MatterSelector.tsx
+      LevelMeter.tsx
+      PrimaryActions.tsx
+      CaptureTimer.tsx
+      LoopChips.tsx
+      MergeNetwork.tsx
+      ResonanceMeter.tsx
+
+  lib/
+    resonaui/
+      tokens.ts
+      types.ts
+      mockState.ts
+```
+
+Do not implement audio folders until needed.
+
+Future audio folders may be:
+
+```txt
+src/lib/audio/
+  audioEngine.ts
+  pitchDetector.ts
+  melodyTrace.ts
+  scaleQuantize.ts
+  loopRecorder.ts
+```
+
+Future visual folders may be:
+
+```txt
+src/lib/visual/
+  matterTypes.ts
+  animationParams.ts
+```
+
+---
+
+# 7. Core state model
+
+Use this as the initial state model:
+
+```ts
+export type AppMode = "solo" | "capture" | "merge";
+
+export type MatterType = "glass" | "liquid" | "bloom";
+
+export type LoopItem = {
+  id: string;
+  name: string;
+  durationSeconds: number;
+  color?: "blue" | "purple" | "magenta";
+};
+
+export type Participant = {
+  id: string;
+  name: string;
+  role: string;
+  color: "blue" | "purple" | "magenta" | "cyan";
+};
+
+export type ResonanceAppState = {
+  mode: AppMode;
+  matter: MatterType;
+  level: number;
+  resonance: number;
+  elapsedSeconds: number;
+  loops: LoopItem[];
+  participants: Participant[];
+};
+```
+
+Default mock state:
+
+```ts
+export const defaultResonanceState: ResonanceAppState = {
+  mode: "solo",
+  matter: "glass",
+  level: 0.63,
+  resonance: 0.72,
+  elapsedSeconds: 8,
+  loops: [
+    { id: "loop-01", name: "Loop 01", durationSeconds: 7, color: "magenta" },
+    { id: "loop-02", name: "Loop 02", durationSeconds: 5, color: "purple" }
+  ],
+  participants: [
+    { id: "luna", name: "Luna", role: "Vocals", color: "blue" },
+    { id: "kai", name: "Kai", role: "Keys", color: "purple" },
+    { id: "you", name: "You", role: "Ambient", color: "cyan" }
+  ]
+};
+```
+
+---
+
+# 8. UI structure
+
+Every main mobile screen should include:
+
+* RESONA logo at top
+* short subtitle indicating current state
+* central Sound Matter object
+* minimal status indicator
+* matter selector
+* Capture and Merge buttons
+
+Basic layout:
+
+```txt
+┌─────────────────────────────┐
+│ top controls / status        │
+│ RESONA                       │
+│ subtitle                     │
+│                             │
+│ central sound matter         │
+│                             │
+│ hint / timer / resonance     │
+│ level / loops / meter        │
+│                             │
+│ matter selector              │
+│ Capture / Merge buttons      │
+└─────────────────────────────┘
+```
+
+The UI must be mobile-first.
+
+---
+
+# 9. Screen behavior
+
+## 9.1 Solo mode
+
+When `mode === "solo"`:
+
+Subtitle:
+
+```txt
+Touch your voice.
+```
+
+Show:
+
+* central Sound Matter orb
+* `Touch / Hum`
+* level meter
+* matter selector
+* Capture and Merge buttons
+
+If `matter === "glass"`:
+
+* central object should be faceted, crystalline, refractive
+* selector highlights Glass
+
+If `matter === "liquid"`:
+
+* subtitle may become `Shape sound as liquid.`
+* central object should be fluid, rippling, organic
+* selector highlights Liquid
+
+If `matter === "bloom"`:
+
+* central object should be soft, petal-like, expanding
+* selector highlights Bloom
+
+## 9.2 Capture mode
+
+When `mode === "capture"`:
+
+Subtitle:
+
+```txt
+Tracing your melody.
+```
+
+Show:
+
+* central Glass/Liquid/Bloom matter object
+* recording ring
+* melody trace line
+* timer
+* status text
+* loop chips
+* matter selector
+* active Capture button
+
+Timer display example:
+
+```txt
+● 00:08
+```
+
+Status text:
+
+```txt
+Listening and shaping your melody
+```
+
+Loop chips:
+
+```txt
+Loop 01  00:07  ×
+Loop 02  00:05  ×
++
+```
+
+Capture button should be visually active and brighter.
+
+## 9.3 Merge mode
+
+When `mode === "merge"`:
+
+Subtitle:
+
+```txt
+3 people resonating.
+```
+
+Show:
+
+* resonance network instead of single orb
+* participant nodes
+* central shared orb
+* connection lines
+* resonance score
+* resonance meter
+* matter selector
+* active Merge button
+
+Participant mock labels:
+
+```txt
+Luna
+Vocals
+
+Kai
+Keys
+
+You
+Ambient
+```
+
+Resonance score:
+
+```txt
+RESONANCE
+72%
+Syncing in harmony
+```
+
+Use the word **Resonance** in UI rather than “Sync Score.”
+
+---
+
+# 10. Core components
+
+## ResonanceApp
+
+Responsibilities:
+
+* own `mode`
+* own `matter`
+* own mock state
+* handle Capture and Merge button actions
+* pass state to child components
+
+## AppShell
+
+Responsibilities:
+
+* mobile app container
+* background gradient
+* safe spacing
+* vertical layout
+* max width
+* dark visual base
+
+## Header
+
+Responsibilities:
+
+* logo
+* subtitle
+* optional left control icon
+* optional right menu/share icon
+
+## SoundMatterCanvas
+
+Responsibilities:
+
+* render Solo/Capture central matter
+* support Glass/Liquid/Bloom variants
+* show recording ring if capture state
+* show melody trace if capture state
+* show orbital rings and glow
+
+Do not make this a plain circle. It must feel like a luminous material object.
+
+## MergeNetwork
+
+Responsibilities:
+
+* render participant nodes
+* render central shared resonance orb
+* render connecting light lines
+* render orbital paths
+
+## MatterSelector
+
+Responsibilities:
+
+* show Glass / Liquid / Bloom
+* highlight selected matter
+* update matter state
+
+## LevelMeter
+
+Responsibilities:
+
+* show segmented audio level bars
+* display percentage
+
+## ResonanceMeter
+
+Responsibilities:
+
+* show resonance percentage
+* waveform-like bars
+* status caption
+
+## PrimaryActions
+
+Responsibilities:
+
+* show Capture and Merge buttons
+* highlight active mode
+
+## LoopChips
+
+Responsibilities:
+
+* show loop chips in Capture mode
+* show add button
+* support remove handler later
+
+---
+
+# 11. Design tokens
+
+Use tokens or CSS variables for colors, radius, shadow, and typography.
+
+Suggested CSS variables:
+
+```css
+:root {
+  --resona-bg-0: #02030A;
+  --resona-bg-1: #050816;
+  --resona-bg-2: #0A1024;
+
+  --resona-text-primary: #F4F7FF;
+  --resona-text-secondary: #A9B7FF;
+  --resona-text-muted: #6F789B;
+
+  --resona-blue-core: #3B6CFF;
+  --resona-blue-glow: #5EA0FF;
+  --resona-cyan-glow: #7DE7FF;
+
+  --resona-purple-core: #7A3DFF;
+  --resona-violet-glow: #A06CFF;
+  --resona-magenta: #FF5AAE;
+
+  --resona-panel-fill: rgba(8, 12, 28, 0.72);
+  --resona-panel-stroke: rgba(130, 150, 255, 0.18);
+
+  --resona-radius-pill: 999px;
+  --resona-radius-panel: 28px;
+}
+```
+
+---
+
+# 12. Animation guidance
+
+Animations should be subtle and premium.
+
+Prefer:
+
+* slow breathing
+* gentle glow pulse
+* smooth orbital movement
+* soft trace motion
+* slow gradient drift
+* calm resonance line pulsing
+
+Avoid:
+
+* bouncy cartoon motion
+* aggressive shaking
+* fast chaotic particles
+* distracting loading spinners
+* game-like feedback
+* too much motion at once
+
+For reduced motion users, animation should be minimized.
+
+---
+
+# 13. Interaction guidance
+
+For the UI prototype:
+
+* Capture button toggles `mode` between `"solo"` and `"capture"`.
+* Merge button toggles `mode` between `"solo"` and `"merge"`.
+* Matter selector changes `matter`.
+* Main orb may respond to pointer down/up with glow changes.
+* Audio level can be mocked with animated bars.
+* Recording timer can be mocked.
+
+Do not implement real audio until requested.
+
+---
+
+# 14. Copy rules
+
+Use short, elegant copy.
+
+Preferred words:
+
+* Touch
+* Hum
+* Capture
+* Merge
+* Resonance
+* Trace
+* Bloom
+* Orbit
+* Liquid
+* Glass
+
+Avoid technical UI words unless in code:
+
+* quantize
+* pitch detection
+* FFT
+* buffer
+* WebSocket
+* BPM sync
+* audio graph
+
+Technical terms may be used internally, not in main UI.
+
+---
+
+# 15. Acceptance criteria
+
+A UI implementation is good if:
+
+* it immediately resembles the reference images
+* it feels premium and futuristic
+* the central object feels like sound material
+* the UI is simple and not cluttered
+* Capture and Merge are visually clear
+* matter switching feels meaningful
+* the app does not look like a generic dashboard
+* the app does not look like a traditional DAW
+* the component structure is clean
+* future audio implementation can be added without rewriting everything
+
+A UI implementation is bad if:
+
+* it is too flat
+* it is too bright
+* it uses generic cards
+* it adds too many sliders
+* it looks like an analytics panel
+* the central orb is weak or decorative only
+* the design does not communicate sound becoming matter
+* the states feel unrelated to each other
+
+---
+
+# 16. Important development rule
+
+Always prioritize the visual and interaction identity before adding real audio features.
+
+The correct order is:
+
+```txt
+reference image
+→ static UI
+→ state transitions
+→ mock animation
+→ local audio
+→ capture and loop
+→ multi-user merge
+```
+
+Do not jump directly to microphone or networking implementation.

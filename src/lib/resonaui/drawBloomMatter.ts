@@ -1,8 +1,10 @@
 import { fbm } from "./noise";
 import {
+  drawContactShadow,
   drawHalo,
   drawOrbitRings,
   drawPitchTrace,
+  drawReactiveSpectrum,
   drawRecordingRing,
   withAlpha,
   type DrawCtx
@@ -24,6 +26,8 @@ export function drawBloomMatter(d: DrawCtx) {
 
   drawHalo(d, 1.75);
   drawOrbitRings(d);
+  drawReactiveSpectrum(d, 1.44);
+  drawContactShadow(d, 0.3);
 
   ctx.save();
   ctx.translate(cx, cy);
@@ -48,9 +52,10 @@ export function drawBloomMatter(d: DrawCtx) {
       ctx.rotate(ang);
 
       // Translucent membrane fill — brighter near the core, fading at the tip.
-      const grad = ctx.createLinearGradient(0, 0, 0, -len);
-      grad.addColorStop(0, withAlpha(layer.color, layer.alpha * 1.1));
-      grad.addColorStop(0.45, withAlpha(layer.color, layer.alpha * 0.7));
+      const grad = ctx.createRadialGradient(0, -len * 0.32, 0, 0, -len * 0.36, len);
+      grad.addColorStop(0, withAlpha(layer.edge, layer.alpha * 0.75));
+      grad.addColorStop(0.32, withAlpha(layer.color, layer.alpha * 1.1));
+      grad.addColorStop(0.68, withAlpha(layer.color, layer.alpha * 0.55));
       grad.addColorStop(1, withAlpha(layer.color, 0));
 
       ctx.beginPath();
@@ -59,13 +64,15 @@ export function drawBloomMatter(d: DrawCtx) {
       ctx.bezierCurveTo(-width * 0.5, -len * 0.9, -width, -len * 0.3, 0, 0);
       ctx.closePath();
       ctx.fillStyle = grad;
+      ctx.shadowColor = withAlpha(layer.edge, 0.35 + energy * 0.18);
+      ctx.shadowBlur = 12 + energy * 10;
       ctx.fill();
 
       // Only the petal rim glows (thin luminous edge).
       ctx.strokeStyle = withAlpha(layer.edge, 0.32);
-      ctx.lineWidth = 1;
-      ctx.shadowColor = withAlpha(layer.edge, 0.6);
-      ctx.shadowBlur = 6;
+      ctx.lineWidth = 1 + energy * 0.5;
+      ctx.shadowColor = withAlpha(layer.edge, 0.65);
+      ctx.shadowBlur = 8 + energy * 8;
       ctx.stroke();
       ctx.shadowBlur = 0;
       ctx.restore();

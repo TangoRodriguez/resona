@@ -8,7 +8,7 @@ export function CaptureTimer({ elapsedSeconds }: { elapsedSeconds: number }) {
         <span className={styles.dot} aria-hidden />
         {formatTimer(elapsedSeconds)}
       </span>
-      <p className={styles.status}>Listening and shaping your melody</p>
+      <p className={styles.status}>Recording and shaping your voice</p>
     </div>
   );
 }

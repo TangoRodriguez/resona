@@ -5,7 +5,6 @@ import { AppShell } from "./AppShell";
 import { TopControls } from "./TopControls";
 import { Header } from "./Header";
 import { SoundMatterCanvas } from "./SoundMatterCanvas";
-import { MergeNetwork } from "./MergeNetwork";
 import { LevelMeter } from "./LevelMeter";
 import { CaptureTimer } from "./CaptureTimer";
 import { LoopChips } from "./LoopChips";
@@ -17,6 +16,7 @@ import { useAudioEngine } from "@/hooks/useAudioEngine";
 import { defaultResonanceState, getSubtitle } from "@/lib/resonaui/mockState";
 import type {
   AppMode,
+  LoopColor,
   MatterType,
   ResonanceAppState
 } from "@/lib/resonaui/types";
@@ -24,14 +24,43 @@ import styles from "./ResonanceApp.module.css";
 
 let loopCounter = defaultResonanceState.loops.length;
 
+const loopColorForMatter: Record<MatterType, LoopColor> = {
+  glass: "blue",
+  liquid: "purple",
+  bloom: "magenta"
+};
+
+const matterTypes = ["glass", "liquid", "bloom"] satisfies MatterType[];
+
+function cloneDefaultState(): ResonanceAppState {
+  return {
+    ...defaultResonanceState,
+    loops: [...defaultResonanceState.loops]
+  };
+}
+
+function readMatterQuery(): MatterType | null {
+  if (typeof window === "undefined") return null;
+  const matter = new URLSearchParams(window.location.search).get("matter");
+  if (!matterTypes.includes(matter as MatterType)) return null;
+  return matter as MatterType;
+}
+
 export function ResonanceApp() {
-  const [state, setState] = useState<ResonanceAppState>(defaultResonanceState);
+  const [state, setState] = useState<ResonanceAppState>(cloneDefaultState);
   const audio = useAudioEngine();
 
-  // Mock animated level meter (Phase 0.2).
+  useEffect(() => {
+    const matter = readMatterQuery();
+    if (!matter) return;
+    setState((prev) => ({ ...prev, matter }));
+  }, []);
+
+  // Mock animated level meter while the real mic is idle.
   useEffect(() => {
     const id = window.setInterval(() => {
       setState((prev) => {
+        if (audio.state.micEnabled) return prev;
         const target = prev.mode === "capture" ? 0.72 : 0.55;
         const wobble = (Math.random() - 0.5) * 0.22;
         const level = Math.min(0.95, Math.max(0.15, target + wobble));
@@ -39,7 +68,16 @@ export function ResonanceApp() {
       });
     }, 420);
     return () => window.clearInterval(id);
-  }, []);
+  }, [audio.state.micEnabled]);
+
+  useEffect(() => {
+    if (!audio.state.micEnabled) return;
+    setState((prev) => ({ ...prev, level: audio.state.micLevel }));
+  }, [audio.state.micEnabled, audio.state.micLevel]);
+
+  useEffect(() => {
+    audio.syncMicMatter(state.matter);
+  }, [audio.syncMicMatter, state.matter]);
 
   // Mock capture timer.
   useEffect(() => {
@@ -60,19 +98,58 @@ export function ResonanceApp() {
       elapsedSeconds: mode === "capture" ? 0 : prev.elapsedSeconds
     }));
 
-  const setMatter = (matter: MatterType) =>
+  const setMatter = (matter: MatterType) => {
+    audio.syncMicMatter(matter);
     setState((prev) => ({ ...prev, matter }));
+  };
 
-  const toggleCapture = () =>
-    setMode(state.mode === "capture" ? "solo" : "capture");
+  const toggleCapture = async () => {
+    if (audio.state.captureActive || state.mode === "capture") {
+      const recording = await audio.stopCapture();
+      setState((prev) => {
+        const next = { ...prev, mode: "solo" as AppMode, elapsedSeconds: 0 };
+        if (!recording || recording.blob.size === 0) return next;
+        loopCounter += 1;
+        return {
+          ...next,
+          loops: [
+            ...prev.loops,
+            {
+              id: `loop-${loopCounter}`,
+              name: `${state.matter[0].toUpperCase()}${state.matter.slice(1)} ${String(loopCounter).padStart(2, "0")}`,
+              durationSeconds: recording.durationSeconds,
+              color: loopColorForMatter[state.matter],
+              matter: state.matter,
+              url: recording.url,
+              mimeType: recording.mimeType
+            }
+          ]
+        };
+      });
+      return;
+    }
 
-  const toggleMerge = () => setMode(state.mode === "merge" ? "solo" : "merge");
-
-  const removeLoop = (id: string) =>
+    const ok = await audio.startCapture(state.matter);
     setState((prev) => ({
       ...prev,
-      loops: prev.loops.filter((l) => l.id !== id)
+      mode: ok ? "capture" : "solo",
+      elapsedSeconds: 0,
+      level: ok ? 0 : prev.level
     }));
+  };
+
+  const toggleMerge = () => setMode(state.mode === "merge" ? "solo" : "merge");
+  const touchVelocity = Math.max(0.9, state.level);
+
+  const removeLoop = (id: string) =>
+    setState((prev) => {
+      const loop = prev.loops.find((l) => l.id === id);
+      if (loop?.url) URL.revokeObjectURL(loop.url);
+      return {
+        ...prev,
+        loops: prev.loops.filter((l) => l.id !== id)
+      };
+    });
 
   const addLoop = () =>
     setState((prev) => {
@@ -101,21 +178,21 @@ export function ResonanceApp() {
         <Header subtitle={subtitle} />
 
         <div className={styles.center}>
-          {state.mode === "merge" ? (
-            <MergeNetwork participants={state.participants} />
-          ) : (
-            <SoundMatterCanvas
-              mode={state.mode}
-              matter={state.matter}
-              level={state.level}
-              resonance={state.resonance}
-              isRecording={state.mode === "capture"}
-              elapsedSeconds={state.elapsedSeconds}
-              onPress={(ny) => audio.tap(state.matter, ny, state.level)}
-              onHold={(ny) => audio.startDrone(state.matter, ny, state.level)}
-              onRelease={() => audio.stopDrone()}
-            />
-          )}
+          <SoundMatterCanvas
+            mode={state.mode}
+            matter={state.matter}
+            level={state.level}
+            resonance={state.resonance}
+            pitch={audio.state.micEnabled ? audio.state.micPitch : null}
+            pitchConfidence={
+              audio.state.micEnabled ? audio.state.pitchConfidence : 0
+            }
+            isRecording={state.mode === "capture"}
+            elapsedSeconds={state.elapsedSeconds}
+            onPress={(ny) => void audio.tap(state.matter, ny, touchVelocity)}
+            onHold={(ny) => void audio.startDrone(state.matter, ny, touchVelocity)}
+            onRelease={() => audio.stopDrone()}
+          />
 
           {state.mode === "solo" && (
             <p className={styles.hint}>
@@ -159,12 +236,17 @@ export function ResonanceApp() {
 
           {state.mode !== "merge" && <AmbientLayerControl audio={audio} />}
 
-          {state.mode === "capture" && (
+          {state.mode !== "merge" && (
             <LoopChips
               loops={state.loops}
               onRemove={removeLoop}
               onAdd={addLoop}
+              playbackDisabled={audio.state.captureActive}
             />
+          )}
+
+          {audio.state.error && (
+            <p className={styles.error}>{audio.state.error}</p>
           )}
         </div>
 

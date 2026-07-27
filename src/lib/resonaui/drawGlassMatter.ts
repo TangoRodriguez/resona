@@ -2,12 +2,15 @@ import { fbm } from "./noise";
 import {
   blobPath,
   drawChromaticRim,
+  drawContactShadow,
   drawHalo,
   drawOrbitRings,
   drawOrganicContour,
   drawPitchTrace,
+  drawReactiveSpectrum,
   drawRecordingRing,
   drawRefractiveRibbon,
+  drawSphericalDepth,
   drawSpecularHighlight,
   withAlpha,
   type DrawCtx
@@ -31,6 +34,8 @@ export function drawGlassMatter(d: DrawCtx) {
 
   drawHalo(d, 1.6);
   drawOrbitRings(d);
+  drawReactiveSpectrum(d, 1.46);
+  drawContactShadow(d, 0.34);
 
   // Body fill — luminous blue centre fading to deep violet at the rim.
   ctx.save();
@@ -50,6 +55,16 @@ export function drawGlassMatter(d: DrawCtx) {
   blobPath(ctx, cx, cy, RR, distort);
   ctx.fillStyle = grad;
   ctx.fill();
+  drawSphericalDepth(
+    { ...d, R: RR },
+    distort,
+    {
+      shade: "rgba(3,6,38,1)",
+      gloss: "rgba(240,248,255,1)",
+      latitude: "rgba(180,215,255,1)",
+      alpha: 1
+    }
+  );
 
   // Internal refraction, clipped to the body.
   ctx.save();
@@ -58,7 +73,7 @@ export function drawGlassMatter(d: DrawCtx) {
 
   // Stacked translucent refractive ribbons — light bending inside the glass.
   drawRefractiveRibbon(d, {
-    radius: 0.72,
+    radius: 0.76 + energy * 0.03,
     thickness: 0.05,
     color: "rgba(180,215,255,1)",
     alpha: 0.4,
@@ -67,7 +82,7 @@ export function drawGlassMatter(d: DrawCtx) {
     tilt: 0.9
   });
   drawRefractiveRibbon(d, {
-    radius: 0.52,
+    radius: 0.56 + m.pitchNorm * 0.04,
     thickness: 0.06,
     color: "rgba(150,120,255,1)",
     alpha: 0.34,
@@ -76,7 +91,7 @@ export function drawGlassMatter(d: DrawCtx) {
     tilt: 1.05
   });
   drawRefractiveRibbon(d, {
-    radius: 0.34,
+    radius: 0.38 + energy * 0.04,
     thickness: 0.05,
     color: "rgba(210,230,255,1)",
     alpha: 0.4,
@@ -87,6 +102,7 @@ export function drawGlassMatter(d: DrawCtx) {
 
   // Fine internal striation.
   drawOrganicContour(d, 4, "rgba(190,215,255,1)", 0.08);
+  drawOrganicContour(d, 5, "rgba(255,255,255,1)", 0.045 + energy * 0.03);
 
   // Violet inner reflection low-right.
   drawSpecularHighlight(d, 0.32, 0.36, 0.8, "rgba(150,90,255,1)", 0.4);

@@ -202,6 +202,131 @@ export function drawOrbitRings(d: DrawCtx) {
   ctx.restore();
 }
 
+/** Soft contact glow under the matter, giving the orb a physical stage. */
+export function drawContactShadow(d: DrawCtx, alpha = 0.32) {
+  const { ctx, cx, cy, R, m, pal } = d;
+  const [r, g, b] = pal.haloRGB;
+  ctx.save();
+  ctx.globalCompositeOperation = "lighter";
+  const y = cy + R * (0.88 + m.press * 0.06);
+  const gnd = ctx.createRadialGradient(cx, y, 0, cx, y, R * 1.22);
+  gnd.addColorStop(0, `rgba(${r},${g},${b},${alpha * (0.45 + m.energy * 0.8)})`);
+  gnd.addColorStop(0.42, `rgba(${r},${g},${b},${alpha * 0.28})`);
+  gnd.addColorStop(1, `rgba(${r},${g},${b},0)`);
+  ctx.translate(cx, y);
+  ctx.scale(1.08, 0.18);
+  ctx.fillStyle = gnd;
+  ctx.beginPath();
+  ctx.arc(0, 0, R * 1.14, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+
+/** NCS-like reactive bars wrapped around the matter without crowding the UI. */
+export function drawReactiveSpectrum(d: DrawCtx, scale = 1.42) {
+  const { ctx, cx, cy, R, t, m, pal } = d;
+  const [r, g, b] = pal.haloRGB;
+  const count = 72;
+  const baseR = R * scale;
+  ctx.save();
+  ctx.globalCompositeOperation = "lighter";
+  ctx.lineCap = "round";
+  for (let i = 0; i < count; i++) {
+    const a = (i / count) * Math.PI * 2;
+    const wave =
+      0.5 +
+      0.5 *
+        Math.sin(i * 0.53 + t * 2.3 + m.pitchNorm * Math.PI * 3);
+    const noise = 0.5 + 0.5 * fbm(i * 0.08, t * 0.42);
+    const amp = 0.12 + m.energy * (0.58 * wave + 0.28 * noise) + m.press * 0.2;
+    const len = R * 0.02 + R * 0.18 * amp;
+    const tilt = 0.83;
+    const x1 = cx + Math.cos(a) * baseR;
+    const y1 = cy + Math.sin(a) * baseR * tilt;
+    const x2 = cx + Math.cos(a) * (baseR + len);
+    const y2 = cy + Math.sin(a) * (baseR + len) * tilt;
+    const visible = 0.18 + 0.42 * Math.max(0, Math.sin(a + Math.PI * 0.2));
+
+    ctx.strokeStyle = `rgba(${r},${g},${b},${visible * (0.18 + m.energy * 0.42)})`;
+    ctx.lineWidth = 0.8 + amp * 1.4;
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+/** Shared inner 3D shell: refraction bands, lower shade, and surface gloss. */
+export function drawSphericalDepth(
+  d: DrawCtx,
+  distort: (angle: number, ux: number, uy: number) => number,
+  opts: {
+    shade: string;
+    gloss: string;
+    latitude: string;
+    alpha?: number;
+  }
+) {
+  const { ctx, cx, cy, R, t, m } = d;
+  const alpha = opts.alpha ?? 1;
+
+  ctx.save();
+  blobPath(ctx, cx, cy, R, distort);
+  ctx.clip();
+
+  const lower = ctx.createRadialGradient(
+    cx + R * 0.18,
+    cy + R * 0.58,
+    R * 0.08,
+    cx,
+    cy,
+    R * 1.08
+  );
+  lower.addColorStop(0, withAlpha(opts.shade, 0.28 * alpha));
+  lower.addColorStop(0.58, withAlpha(opts.shade, 0.12 * alpha));
+  lower.addColorStop(1, withAlpha(opts.shade, 0));
+  ctx.fillStyle = lower;
+  ctx.fillRect(cx - R, cy - R, R * 2, R * 2);
+
+  ctx.globalCompositeOperation = "screen";
+  for (let i = 0; i < 7; i++) {
+    const k = i / 6;
+    const y = cy + (k - 0.5) * R * 1.22;
+    const width = R * Math.sqrt(Math.max(0.05, 1 - Math.pow(k * 2 - 1, 2)));
+    const wob = Math.sin(t * 0.65 + i * 1.2 + m.pitchNorm * 2) * R * 0.035;
+    ctx.beginPath();
+    ctx.ellipse(
+      cx + wob,
+      y,
+      width * (0.75 + m.energy * 0.1),
+      R * (0.055 + 0.018 * Math.sin(t + i)),
+      Math.sin(t * 0.16 + i) * 0.2,
+      0,
+      Math.PI * 2
+    );
+    ctx.strokeStyle = withAlpha(opts.latitude, (0.045 + m.energy * 0.07) * alpha);
+    ctx.lineWidth = 0.8;
+    ctx.stroke();
+  }
+
+  const gloss = ctx.createRadialGradient(
+    cx - R * 0.3,
+    cy - R * 0.48,
+    0,
+    cx - R * 0.3,
+    cy - R * 0.48,
+    R * 0.92
+  );
+  gloss.addColorStop(0, withAlpha(opts.gloss, 0.52 * alpha));
+  gloss.addColorStop(0.3, withAlpha(opts.gloss, 0.14 * alpha));
+  gloss.addColorStop(0.68, withAlpha(opts.gloss, 0.02 * alpha));
+  gloss.addColorStop(1, withAlpha(opts.gloss, 0));
+  ctx.fillStyle = gloss;
+  ctx.fillRect(cx - R, cy - R, R * 2, R * 2);
+  ctx.restore();
+}
+
 /** Internal flowing ribbon highlights (used by Glass & Liquid). */
 export function drawRibbons(d: DrawCtx, count: number, alpha: number) {
   const { ctx, cx, cy, R, t, m, pal } = d;

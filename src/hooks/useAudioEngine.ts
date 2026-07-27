@@ -4,8 +4,11 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { MatterType } from "@/lib/resonaui/types";
 import {
   DEFAULT_TRACKS,
+  DEFAULT_TRANSFORM_SETTINGS,
   getAudioEngine,
-  type DefaultTrack
+  type DefaultTrack,
+  type RecordedCapture,
+  type TransformSettings
 } from "@/lib/audio/audioEngine";
 
 export type AudioState = {
@@ -14,6 +17,13 @@ export type AudioState = {
   ambientVolume: number;
   selectedTrack: string; // track id
   masterVolume: number;
+  micEnabled: boolean;
+  captureActive: boolean;
+  micLevel: number;
+  micPitch: number | null;
+  pitchConfidence: number;
+  transform: TransformSettings;
+  error: string | null;
 };
 
 const INITIAL: AudioState = {
@@ -21,7 +31,14 @@ const INITIAL: AudioState = {
   ambientEnabled: false,
   ambientVolume: 0.6,
   selectedTrack: DEFAULT_TRACKS[0]?.id ?? "",
-  masterVolume: 0.8
+  masterVolume: 1,
+  micEnabled: false,
+  captureActive: false,
+  micLevel: 0,
+  micPitch: null,
+  pitchConfidence: 0,
+  transform: DEFAULT_TRANSFORM_SETTINGS,
+  error: null
 };
 
 function trackById(id: string): DefaultTrack | undefined {
@@ -37,6 +54,7 @@ export function useAudioEngine() {
   const engine = getAudioEngine();
   const [state, setState] = useState<AudioState>(INITIAL);
   const stateRef = useRef(state);
+  const currentMicMatterRef = useRef<MatterType>("glass");
   stateRef.current = state;
 
   // Enable audio (must be called from a user gesture). Starts ambient if it
@@ -105,15 +123,31 @@ export function useAudioEngine() {
   );
 
   const tap = useCallback(
-    (matter: MatterType, vertical01: number, velocity = 0.7) => {
-      engine.tap(matter, vertical01, velocity);
+    async (matter: MatterType, vertical01: number, velocity = 0.7) => {
+      const ok = await engine.tap(matter, vertical01, Math.max(0.9, velocity));
+      if (!ok) return;
+      if (!stateRef.current.enabled) {
+        engine.setMasterVolume(stateRef.current.masterVolume);
+        engine.setAmbientVolume(stateRef.current.ambientVolume);
+        setState((s) => ({ ...s, enabled: true, error: null }));
+      }
     },
     [engine]
   );
 
   const startDrone = useCallback(
-    (matter: MatterType, vertical01: number, velocity = 0.7) => {
-      engine.startDrone(matter, vertical01, velocity);
+    async (matter: MatterType, vertical01: number, velocity = 0.7) => {
+      const ok = await engine.startDrone(
+        matter,
+        vertical01,
+        Math.max(0.9, velocity)
+      );
+      if (!ok) return;
+      if (!stateRef.current.enabled) {
+        engine.setMasterVolume(stateRef.current.masterVolume);
+        engine.setAmbientVolume(stateRef.current.ambientVolume);
+        setState((s) => ({ ...s, enabled: true, error: null }));
+      }
     },
     [engine]
   );
@@ -122,9 +156,90 @@ export function useAudioEngine() {
     engine.stopDrone();
   }, [engine]);
 
+  const updateTransform = useCallback(
+    <K extends keyof TransformSettings>(key: K, value: TransformSettings[K]) => {
+      setState((s) => {
+        const transform = { ...s.transform, [key]: value };
+        if (s.micEnabled) {
+          engine.setMicTransform(currentMicMatterRef.current, transform);
+        }
+        return { ...s, transform };
+      });
+    },
+    [engine]
+  );
+
+  const syncMicMatter = useCallback(
+    (matter: MatterType) => {
+      currentMicMatterRef.current = matter;
+      if (!stateRef.current.micEnabled) return;
+      engine.setMicTransform(matter, stateRef.current.transform);
+    },
+    [engine]
+  );
+
+  const startCapture = useCallback(
+    async (matter: MatterType): Promise<boolean> => {
+      try {
+        currentMicMatterRef.current = matter;
+        const ok = await engine.startCapture(
+          matter,
+          stateRef.current.transform,
+          (analysis) => {
+            setState((s) => ({
+              ...s,
+              micLevel: analysis.level,
+              micPitch: analysis.pitch,
+              pitchConfidence: analysis.pitchConfidence
+            }));
+          }
+        );
+        if (!ok) return false;
+        engine.setMasterVolume(stateRef.current.masterVolume);
+        engine.setAmbientVolume(stateRef.current.ambientVolume);
+        setState((s) => ({
+          ...s,
+          enabled: true,
+          micEnabled: true,
+          captureActive: true,
+          error: null
+        }));
+        return true;
+      } catch (error) {
+        engine.stopMic();
+        setState((s) => ({
+          ...s,
+          micEnabled: false,
+          captureActive: false,
+          error: error instanceof Error ? error.message : "Could not start capture."
+        }));
+        return false;
+      }
+    },
+    [engine]
+  );
+
+  const stopCapture = useCallback(async (): Promise<RecordedCapture | null> => {
+    const recording = await engine.stopCapture();
+    engine.stopMic();
+    setState((s) => ({
+      ...s,
+      micEnabled: false,
+      captureActive: false,
+      micLevel: 0,
+      micPitch: null,
+      pitchConfidence: 0
+    }));
+    return recording;
+  }, [engine]);
+
   // Stop the drone if the component unmounts while held.
   useEffect(() => {
-    return () => engine.stopDrone();
+    return () => {
+      engine.stopDrone();
+      void engine.stopCapture();
+      engine.stopMic();
+    };
   }, [engine]);
 
   return {
@@ -137,7 +252,11 @@ export function useAudioEngine() {
     setSelectedTrack,
     tap,
     startDrone,
-    stopDrone
+    stopDrone,
+    updateTransform,
+    syncMicMatter,
+    startCapture,
+    stopCapture
   };
 }
 

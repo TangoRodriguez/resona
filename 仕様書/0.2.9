@@ -1,0 +1,380 @@
+# RESONA Phase 0.2.9 — Reference-Locked Visual Matter Lookdev for Glass / Liquid / Bloom
+
+Phase 0.2.8 と 0.2.8 Addendum に加えて、以下を必ず実施してください。
+
+0.2.8ではr3f / Three.jsによる3D化とGlassのLookdevを指示しましたが、それだけではGlass / Liquid / Bloomが「同じ球体の色違い」や「単純な3D図形の組み合わせ」になる危険があります。
+
+今回の目的は、Glass / Liquid / Bloom の3種類を、それぞれ明確に異なる高品質なVisual Matterとして成立させることです。
+
+---
+
+# 1. Reference images must be used as hard visual targets
+
+以下の3つの参照画像を必ずリポジトリに保存してください。
+
+```txt
+docs/design/references/05-target-glass-orb.png
+docs/design/references/06-target-liquid-orb.png
+docs/design/references/07-target-bloom-membrane.png
+```
+
+それぞれの意味：
+
+```txt
+05-target-glass-orb.png
+  Glass Matter の最終品質目標。
+  透明な球体、屈折、内部リボン、強いFresnel rim、白シアンのハイライト。
+
+06-target-liquid-orb.png
+  Liquid Matter の最終品質目標。
+  渦巻く流体球、波打つ表面、caustics、泡、流体リボン、青紫の液体発光。
+
+07-target-bloom-membrane.png
+  Bloom Matter の最終品質目標。
+  透明な発光花弁、膜の重なり、中心コア、紫ピンク青のオーロラ状レイヤー。
+```
+
+これらは単なる雰囲気画像ではなく、**実装の品質判定基準**です。
+
+実装後、各モードのスクリーンショットをこの参照画像と比較し、明らかに低品質な場合は完了としないでください。
+
+---
+
+# 2. Do not implement the three modes as color variants
+
+重要：
+
+Glass / Liquid / Bloom を、同じ3D球体のマテリアル違い・色違いとして実装しないでください。
+
+NG：
+
+```txt
+Glass = blue transparent sphere
+Liquid = softer blue transparent sphere
+Bloom = purple transparent sphere with petals
+```
+
+これは不十分です。
+
+OK：
+
+```txt
+Glass = refractive glass lens orb
+Liquid = vortex-like luminous fluid body
+Bloom = layered translucent membrane flower
+```
+
+Matterごとに、ベース構造・内部構造・輪郭・発光の仕方を変えてください。
+
+---
+
+# 3. Overall visual quality target
+
+全モードに共通して必要な品質：
+
+* 2D円や単純な楕円に見えない
+* 背景に四角いCanvas領域が見えない
+* 暗部がしっかり残る
+* 白シアンの強いハイライトがある
+* 青、紫、シアン、白のコントラストがある
+* 発光部分はBloomでにじむ
+* 内部構造が線ではなく、面・膜・帯・ボリュームとして見える
+* 表面と内部に奥行きがある
+* 軌道線は主役ではなく、周辺場として控えめに使う
+* スマホで見たときにチープなSVGやCSS図形に見えない
+
+---
+
+# 4. Glass Matter target
+
+Glassは以下を必ず含めてください。
+
+```txt
+GlassMatter
+  - transparent outer shell
+  - strong white/cyan fresnel rim
+  - chromatic purple/blue edge
+  - central emissive blue-white core
+  - at least 2 large internal lens sheets
+  - at least 3 wide translucent ribbon surfaces
+  - several thin caustic filaments
+  - specular highlight planes
+  - small orbital particles
+```
+
+Glassの見た目のキーワード：
+
+```txt
+transparent lens
+refractive glass
+internal ribbons
+white cyan rim
+blue violet depth
+sharp specular highlight
+premium luminous orb
+```
+
+Glassで避けること：
+
+* 中身が空っぽの透明球
+* 中心が白く光るだけ
+* 細い線だけで内部構造を表す
+* 均一な青い球
+* 軌道線が主役になっている状態
+
+Glassの完了条件：
+
+* 参照画像 `05-target-glass-orb.png` と比べて、透明球の厚み、内部リボン、Fresnel rim、白い反射が明確に存在する
+* 画面上で「これはガラス系の音」と直感的に伝わる
+
+---
+
+# 5. Liquid Matter target
+
+LiquidはGlassの派生ではありません。
+Liquidは、透明な球の中に水があるのではなく、**球全体が発光する流体構造体**に見える必要があります。
+
+Liquidは以下を必ず含めてください。
+
+```txt
+LiquidMatter
+  - irregular fluid outer volume
+  - vortex-like internal flow bands
+  - swirling ribbon-like liquid currents
+  - soft caustic light patterns
+  - small internal bubbles / droplets
+  - cyan-blue fluid highlights
+  - violet secondary currents
+  - soft emissive core
+  - slow wave deformation
+  - subtle orbital arcs
+```
+
+Liquidの見た目のキーワード：
+
+```txt
+luminous fluid body
+vortex currents
+watery caustics
+transparent liquid membrane
+flowing blue violet streams
+bubbles
+soft refraction
+living water orb
+```
+
+Liquidで避けること：
+
+* Glassを青く柔らかくしただけ
+* 単純な水色の球
+* 表面だけ少し波打つ球
+* 内部に線を数本入れただけ
+* 流体の渦や流れが見えない状態
+
+Liquidの構造指示：
+
+* 球の輪郭は完全な円ではなく、少し有機的に歪ませる
+* 内部に大きな渦状の流れを2〜3本入れる
+* 流れは細い線ではなく、幅のある半透明の液体リボンにする
+* 水中のcausticsのような細い光を複数入れる
+* 小さな気泡を数個だけ入れる
+* コアはGlassより柔らかく、白飛びしすぎない
+* levelが上がると波の振幅、流体リボンの明るさ、泡の動きが増える
+
+Liquidの完了条件：
+
+* 参照画像 `06-target-liquid-orb.png` と比べて、渦、流体リボン、caustics、泡、流動感が明確にある
+* Glassとは別の物性に見える
+* 画面上で「水・流体・液体の音」と直感的に伝わる
+
+---
+
+# 6. Bloom Matter target
+
+Bloomは、花のアイコンではありません。
+Bloomは、**発光する半透明膜が何層にも開いている有機的な音の花**です。
+
+Bloomは以下を必ず含めてください。
+
+```txt
+BloomMatter
+  - bright central emissive core
+  - 3D layered petal membranes
+  - aurora-like translucent sheets
+  - glowing petal rims
+  - inner small petals and outer large petals
+  - violet / pink / blue color layering
+  - fine vein-like luminous filaments
+  - soft particles embedded in membranes
+  - orbit arcs around the bloom
+```
+
+Bloomの見た目のキーワード：
+
+```txt
+translucent membrane flower
+aurora petals
+glowing organic bloom
+layered luminous sheets
+pink violet blue resonance
+soft radiant core
+ethereal flower made of sound
+```
+
+Bloomで避けること：
+
+* 2Dの花アイコン
+* 平面的なpetal shapes
+* 紫の円に花弁を描いただけ
+* 花弁が線だけで表現されている
+* 中心が白く光るだけで膜が透けていない状態
+
+Bloomの構造指示：
+
+* 花弁は最低でも内側8枚、外側12枚程度を目安にする
+* 花弁は平面ではなく、前後に傾けて3D配置する
+* それぞれの花弁に透明度、発光縁、内部のvein lineを持たせる
+* 花弁は完全な幾何学ではなく、ノイズで少し歪ませる
+* 中央から外側へ光が透けるように見せる
+* levelが上がると花弁が開く
+* pitchがある場合は花弁の高さ・色・開き方が少し変わる
+* capture中はmagentaのmelody traceが花弁の間を通る
+
+Bloomの完了条件：
+
+* 参照画像 `07-target-bloom-membrane.png` と比べて、半透明膜、花弁の奥行き、発光コア、縁の光が明確にある
+* LiquidやGlassとは別の有機的な物性に見える
+* 画面上で「音が花のように開いている」と直感的に伝わる
+
+---
+
+# 7. Use hybrid lookdev if pure geometry is not enough
+
+もし純粋なr3fメッシュだけで参照画像レベルに近づかない場合、ハイブリッド表現を使ってください。
+
+許可するもの：
+
+* alpha gradient texture
+* glow sprite
+* caustic texture plane
+* matcap-like reflection texture
+* screen-facing highlight plane
+* transparent membrane texture
+* reference-inspired overlay layer
+* precomputed radial glow texture
+
+重要：
+
+これは手抜きではありません。
+スマホWebで高品質な透明体・流体・発光膜を実現するための実用的なLookdevです。
+
+ただし、完全な静止画像をそのまま貼るだけにはしないでください。
+リアルタイム要素として、以下は動かしてください。
+
+* orbit particles
+* internal ribbons
+* glow intensity
+* level response
+* pitch response
+* recording ring
+* subtle rotation / breathing
+
+---
+
+# 8. Add mode-specific lookdev files
+
+実装を整理するため、以下のようにモード別のLookdevファイルを分けてください。
+
+```txt
+src/components/resonaui/matter3d/
+  GlassMatter.tsx
+  LiquidMatter.tsx
+  BloomMatter.tsx
+  shared/
+    GlowCore.tsx
+    OrbitalField.tsx
+    SparkParticles.tsx
+    FresnelShell.tsx
+    RibbonSurface.tsx
+    LensSheet.tsx
+    CausticField.tsx
+    HighlightSprites.tsx
+```
+
+Glass / Liquid / Bloomを1つの巨大ファイルにまとめないでください。
+
+---
+
+# 9. Add screenshot comparison workflow
+
+実装後に品質判断できるよう、READMEまたはdocsに以下を書いてください。
+
+```txt
+docs/design/VISUAL_QA.md
+```
+
+内容：
+
+* 参照画像の場所
+* Glass / Liquid / Bloom の比較観点
+* スマホでスクショを撮る手順
+* チェック項目
+* まだ弱い場合の修正キーワード
+
+チェック項目：
+
+```txt
+[ ] Canvasの四角背景が見えない
+[ ] Glassに強いFresnel rimがある
+[ ] Glassに内部リボンとレンズ面がある
+[ ] Liquidに渦状流体とcausticsがある
+[ ] Liquidに泡や液体の奥行きがある
+[ ] Bloomに半透明の花弁膜がある
+[ ] Bloomに発光コアとpetal rimがある
+[ ] 3モードが色違いではなく別物性に見える
+[ ] スマホで見ても破綻していない
+[ ] npm run build が通る
+```
+
+---
+
+# 10. Prioritization
+
+すべてを一度に完璧にするのが難しい場合は、以下の順で進めてください。
+
+```txt
+Priority 1:
+  Canvas背景の四角を消す
+  Glassの品質を最大限上げる
+
+Priority 2:
+  LiquidをGlassの色違いではなく流体渦にする
+
+Priority 3:
+  Bloomを花アイコンではなく半透明膜の開花にする
+
+Priority 4:
+  3モードの音声反応パラメータを揃える
+
+Priority 5:
+  Visual QA documentを追加する
+```
+
+ただし、最終的にはGlass / Liquid / Bloomすべてが参照画像に近い品質を目指すこと。
+
+---
+
+# 11. Completion criteria
+
+このPhase 0.2.9の完了条件：
+
+* `05-target-glass-orb.png`, `06-target-liquid-orb.png`, `07-target-bloom-membrane.png` を参照画像として保存している
+* Glass / Liquid / Bloom が色違いではなく、構造的に異なるVisual Matterになっている
+* Glassは透明ガラス球に見える
+* Liquidは渦巻く発光流体に見える
+* Bloomは半透明膜の花に見える
+* 3モードとも2D図形に見えない
+* Canvas背景の四角が完全に消えている
+* スマホで見て現在より明らかに高級感がある
+* 参照画像との差分を確認するための `docs/design/VISUAL_QA.md` がある
+* `npm run build` が通る

@@ -3,10 +3,13 @@ import {
   blobPath,
   drawCausticField,
   drawChromaticRim,
+  drawContactShadow,
   drawHalo,
   drawOrbitRings,
   drawPitchTrace,
+  drawReactiveSpectrum,
   drawRecordingRing,
+  drawSphericalDepth,
   drawSpecularHighlight,
   withAlpha,
   type DrawCtx
@@ -31,6 +34,8 @@ export function drawLiquidMatter(d: DrawCtx) {
 
   drawHalo(d, 1.7);
   drawOrbitRings(d);
+  drawReactiveSpectrum(d, 1.48);
+  drawContactShadow(d, 0.38);
 
   // Deep body fill — dark indigo so the bright caustics read as light.
   ctx.save();
@@ -50,6 +55,16 @@ export function drawLiquidMatter(d: DrawCtx) {
   blobPath(ctx, cx, cy, RR, distort);
   ctx.fillStyle = grad;
   ctx.fill();
+  drawSphericalDepth(
+    { ...d, R: RR },
+    distort,
+    {
+      shade: "rgba(0,8,55,1)",
+      gloss: "rgba(190,235,255,1)",
+      latitude: "rgba(120,210,255,1)",
+      alpha: 0.92
+    }
+  );
 
   // Everything internal is clipped to the body.
   ctx.save();
@@ -75,19 +90,19 @@ export function drawLiquidMatter(d: DrawCtx) {
   ctx.restore();
 
   // HERO: bright flowing caustic filaments. Density scales with energy.
-  const causticCount = Math.round(13 + energy * 6);
+  const causticCount = Math.round(16 + energy * 10 + m.press * 4);
   drawCausticField(d, {
     count: causticCount,
     color: "rgba(200,235,255,1)",
     glow: "rgba(120,180,255,0.9)",
-    intensity: 0.55 + energy * 0.4,
-    speed: 1.1,
-    width: 1.6 + energy * 0.9,
+    intensity: 0.58 + energy * 0.55 + m.press * 0.18,
+    speed: 1.25 + m.pitchNorm * 0.3,
+    width: 1.8 + energy * 1.15,
     seed: 11
   });
   // A sparser, faster cross layer for crisscross plasma feel.
   drawCausticField(d, {
-    count: Math.round(7 + energy * 3),
+    count: Math.round(9 + energy * 5),
     color: "rgba(170,210,255,1)",
     glow: "rgba(90,140,255,0.8)",
     intensity: 0.35 + energy * 0.3,

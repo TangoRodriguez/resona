@@ -54,6 +54,34 @@
   font-variant-numeric: tabular-nums;
 }
 
+.play {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  color: var(--resona-cyan-glow);
+  background: rgba(110, 210, 255, 0.1);
+  border: 1px solid rgba(140, 225, 255, 0.22);
+  box-shadow: 0 0 10px rgba(80, 170, 255, 0.16);
+  transition: transform 0.18s ease, background 0.2s ease, color 0.2s ease;
+}
+
+.play[data-playing="true"] {
+  color: #02030a;
+  background: var(--resona-cyan-glow);
+}
+
+.play:active {
+  transform: scale(0.94);
+}
+
+.play:disabled {
+  cursor: not-allowed;
+  opacity: 0.38;
+  box-shadow: none;
+}
+
 .remove {
   display: grid;
   place-items: center;

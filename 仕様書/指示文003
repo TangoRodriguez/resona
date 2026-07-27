@@ -1,0 +1,484 @@
+かなり進歩してる。今の状態はもう **「UIプロトタイプ」から「RESONAの実体」になり始めてる**。
+次の順番はこれがいい。
+
+```txt
+1. まずデプロイしてスマホで触る
+2. そのうえで Web Audio のシンセ音を実装
+3. デフォルト音源 / 自分で入れた mp3・wav の再生UIを追加
+4. 最後に中央ビジュアルをさらに生成画像クオリティへ寄せる
+```
+
+スマホでマイク入力を試すなら、ローカルIPの `http://192.168...` だとマイクが使えない可能性が高い。`getUserMedia()` は安全なコンテキスト、つまり基本的に HTTPS が必要なので、Vercel に一度上げるのが一番早いです。([MDNウェブドキュメント][1])
+Vercel は Next.js のデプロイと相性がよく、GitHub連携でpushごとの自動デプロイやPreview Deploymentも使えます。([Vercel][2])
+mp3/wav のデフォルト音源は、Next.jsなら `public` フォルダに置いたファイルを `/audio/xxx.mp3` のように参照できます。([Next.js][3])
+音の生成・加工は Web Audio API で進めるのが筋がよく、OscillatorNodeでシンセ波形、GainNodeで音量制御、AudioBufferSourceNodeで読み込んだ音源再生ができます。([MDNウェブドキュメント][4])
+
+---
+
+## まずデプロイ方針
+
+デプロイは **Vercel + GitHub** がいい。
+
+流れはこれ。
+
+```powershell
+cd c:\Users\tango\Downloads\RESONA
+git init
+git add .
+git commit -m "Initial RESONA prototype"
+```
+
+その後、GitHubにリポジトリを作ってpush。
+Vercelで **Import Git Repository** する。
+Frameworkは Next.js 自動認識でOK。
+Build command は基本 `npm run build`。
+Output directory は指定なしでOK。
+
+スマホ確認では、
+
+* UIだけならVercel URLで即確認
+* マイク機能もVercelのHTTPS上なら確認しやすい
+* 音が鳴らない場合は、最初のタップで `AudioContext.resume()` する処理が必要
+
+---
+
+## Copilot指示文003：デプロイ準備・スマホ確認
+
+RESONAをスマホ実機で確認したいので、まずVercelにデプロイできる状態へ整えてください。
+
+目的：
+
+* GitHub + VercelでデプロイできるNext.jsアプリにする
+* スマホブラウザでUIを確認できる状態にする
+* 今後のマイク入力・音声再生に備えてHTTPS環境で動かせるようにする
+* 既存のUI・Canvas表現は壊さない
+
+確認事項：
+
+1. `npm run build` が通ること
+2. `next.config.*` に不要・危険な設定がないこと
+3. VercelでそのままNext.jsとしてデプロイできること
+4. `package.json` の scripts が適切であること
+5. スマホ表示で横スクロールや過剰な拡大が起きないこと
+6. viewport / metadata が適切に設定されていること
+7. iOS Safari / Android Chromeで見ても中央UIが崩れにくいこと
+
+必要なら以下を整備してください：
+
+* `README.md`
+* `.gitignore`
+* `docs/deploy/VERCEL_DEPLOY.md`
+* `app/layout.tsx` のmetadata / viewport
+* スマホ確認用の注意書き
+
+READMEには以下を含めてください：
+
+* プロジェクト名：RESONA
+* 概要：voice, touch, melody, and synced users become visual matter
+* ローカル起動方法
+* ビルド方法
+* Vercelデプロイ手順
+* スマホ実機確認時の注意
+* マイク機能はHTTPS環境が必要であること
+
+Vercel向けの想定：
+
+* Framework: Next.js
+* Build Command: `npm run build`
+* Install Command: `npm install`
+* Output Directory: default
+* Environment Variables: 初期段階では不要
+
+また、スマホ確認のために、UIがモバイルファーストで正しく中央寄せされるようにしてください。
+
+重要：
+
+* デプロイ作業に関係ないUIの大幅変更はしない
+* SoundMatterCanvasの品質は維持する
+* ビルドが通ることを最優先する
+* 実音声機能はまだ追加しなくてよい
+
+完了条件：
+
+* `npm run build` が成功する
+* GitHub/Vercelへ上げても問題ない構成になっている
+* READMEにデプロイ手順がまとまっている
+* スマホでVercel URLを開いてUI確認できる状態になっている
+
+---
+
+## 次に入れるべき音機能
+
+音楽的な変更は、いきなり本格DTMにしない方がいい。
+RESONAの最初の音は、**物性ごとに違うミニシンセ + デフォルト音源レイヤー**で十分強い。
+
+### 最初の音設計
+
+| Matter | 音                          |
+| ------ | -------------------------- |
+| Glass  | 澄んだベル、FM風、短いアタック、長い残響      |
+| Liquid | 柔らかいパッド、水面っぽいフィルター、ゆっくり揺れる |
+| Bloom  | 暖かい和音、ボーカルパッド、広がるハーモニー     |
+
+### 操作との対応
+
+| 操作       | 音                  |
+| -------- | ------------------ |
+| タップ      | そのMatterの短い音       |
+| 長押し      | 持続音 / drone        |
+| Capture中 | 自動で薄いパルス音やメロディ断片   |
+| Matter切替 | 音色も切り替わる           |
+| Level上昇  | 音量・フィルター・リバーブ量が変わる |
+
+最初はピッチ検出前でもいい。
+タップ位置のY座標で音高を変えれば、もう楽器として遊べる。
+
+---
+
+## デフォルト音源の扱い
+
+あなたがmp3/wavを入れるなら、まずはこういう構成が良い。
+
+```txt
+public/
+  audio/
+    defaults/
+      resona-ambient-01.mp3
+      resona-ambient-02.wav
+```
+
+アプリ上では、下部に大きく置くと邪魔なので、右上の `…` メニュー内か、レベルメーターの近くに小さく出すのがいい。
+
+### UI案
+
+通常画面には小さくこれだけ。
+
+```txt
+Ambient  ON
+```
+
+詳細は `…` から開く。
+
+```txt
+Ambient Layer
+[ ON / OFF ]
+
+Default Track
+resona-ambient-01.mp3
+
+Volume
+────●────
+```
+
+または、RESONAらしくするなら、
+
+```txt
+Bed Sound
+ON / OFF
+```
+
+でもいい。
+ただ開発上は `Ambient Layer` が分かりやすい。
+
+---
+
+## Copilot指示文004：Web Audio・シンセ・デフォルト音源
+
+次は Phase 0.3B として、RESONAに音楽的な音の出力を追加してください。
+
+目的：
+
+* Glass / Liquid / Bloom のMatterごとに異なるシンセサウンドを鳴らす
+* タップや長押しで音が鳴るようにする
+* デフォルトのmp3/wav音源を読み込み、Ambient Layerとして再生/停止できるようにする
+* UIにデフォルト音源のON/OFFと音量調整を追加する
+* ただしUIを複雑にしすぎない
+
+重要：
+
+* 既存のUIとCanvas visualを壊さない
+* DAWのような複雑なUIにしない
+* まずは軽量なWeb Audio API実装でよい
+* Tone.jsなどの外部ライブラリは、必要性が明確でなければ導入しない
+* スマホブラウザではユーザー操作後にAudioContextをresumeする必要があるため、最初のタップまたはEnable Audioで音声を有効化する
+
+実装してほしいファイル例：
+
+* `src/lib/audio/audioEngine.ts`
+* `src/lib/audio/synthPresets.ts`
+* `src/lib/audio/defaultTrackPlayer.ts`
+* `src/hooks/useAudioEngine.ts`
+* `src/components/resonaui/AmbientLayerControl.tsx`
+* 必要なら `src/components/resonaui/AudioEnableButton.tsx`
+
+音源ファイルの配置：
+
+```txt
+public/audio/defaults/
+  resona-ambient-01.mp3
+  resona-ambient-02.wav
+```
+
+Next.jsではpublic配下のファイルをルート相対URLで参照する想定です。
+例：
+
+```ts
+const defaultTrackUrl = "/audio/defaults/resona-ambient-01.mp3";
+```
+
+Web Audio仕様：
+
+* `AudioContext` を1つ管理する
+* ユーザー操作後に `audioContext.resume()` する
+* Matterごとに音色を切り替える
+* GainNodeで全体音量を制御する
+* BiquadFilterNodeで音色変化をつける
+* DelayNode / ConvolverNode / Feedback delay は後から追加できる構造にする
+* mp3/wavはfetchしてArrayBuffer化し、decodeAudioDataしてAudioBufferとして扱う
+* ループ再生にはAudioBufferSourceNodeを使う
+
+Matterごとのシンセ音：
+
+1. Glass
+
+   * sine / triangle / custom partials
+   * 高めのベル音
+   * 短いattack
+   * 長めのrelease
+   * subtle delay / reverb感
+   * タップするとキラッと鳴る
+
+2. Liquid
+
+   * sine / lowpass filtered oscillator
+   * 柔らかいpad
+   * attackは少し遅め
+   * filterがゆっくり揺れる
+   * タップすると水滴っぽい短音
+   * 長押しで柔らかい持続音
+
+3. Bloom
+
+   * warm pad
+   * 複数oscillatorで軽い和音
+   * attack遅め
+   * release長め
+   * 3度/5度/9度っぽいハーモニー
+   * levelに応じて広がる
+
+タップ操作：
+
+* SoundMatterCanvas上のpointer downで音を鳴らす
+* pointer位置のY座標でpitchを変える
+* 画面上ほど高い音、下ほど低い音
+* matterごとのscaleに丸める
+* 音が大きすぎないように必ずlimiter的なgain制御を入れる
+
+状態：
+
+```ts
+type AudioState = {
+  enabled: boolean;
+  ambientEnabled: boolean;
+  ambientVolume: number;
+  selectedTrack: string;
+  masterVolume: number;
+};
+```
+
+UI：
+
+* 右上の `...` メニュー、またはLevelMeter周辺に小さなAmbient Layer UIを追加
+* 通常画面には邪魔にならないよう `Ambient ON/OFF` 程度にする
+* 詳細パネルで以下を操作できるようにする
+
+  * Enable Audio
+  * Ambient Layer ON/OFF
+  * Track選択
+  * Ambient Volume
+  * Master Volume
+
+UI文言：
+
+* `Enable Audio`
+* `Ambient Layer`
+* `Default Track`
+* `ON`
+* `OFF`
+* `Volume`
+
+完了条件：
+
+* スマホ/PCで最初のユーザー操作後に音が鳴る
+* Glass / Liquid / Bloom で音色が変わる
+* SoundMatterCanvasをタップするとMatterごとの音が鳴る
+* `public/audio/defaults/` に入れたmp3/wavをAmbient Layerとして再生/停止できる
+* Ambient音量を調整できる
+* `npm run build` が通る
+
+---
+
+## ビジュアルについての次の修正方針
+
+今の進歩は良い。非線形化はできている。
+ただ、生成画像との差はまだここ。
+
+### 今の弱点
+
+* 光沢がまだ少しフラット
+* ガラスの内部反射が少ない
+* コースティクス、つまり水中の光のゆらめき感が弱い
+* 曲線は増えたが、まだ「描いた線」に見える
+* 透明なレイヤーの厚みが足りない
+* 生成画像のような**屈折・奥行き・複雑なハイライトの重なり**が足りない
+
+### 次の改善キーワード
+
+```txt
+refractive caustics
+internal ribbons
+specular highlights
+chromatic aberration
+layered translucent membranes
+lens distortion
+volumetric glow
+thin luminous filaments
+nonlinear bezier splines
+organic contour fields
+```
+
+日本語だと、
+
+```txt
+屈折光
+コースティクス
+内部反射
+リボン状ハイライト
+色収差
+半透明膜の重なり
+レンズ歪み
+体積感のある発光
+細い発光フィラメント
+非線形ベジェ曲線
+有機的な等高線場
+```
+
+---
+
+## Copilot指示文005：生成画像クオリティへ寄せるVisual Refinement
+
+現在のRESONAのSound Matter Canvasはかなり改善され、非線形な物性表現に近づいています。ただし、まだ生成リファレンス画像のような高級感・屈折感・複雑なテクスチャ・奥行きには到達していません。
+
+次は Phase 0.2.6 として、中央のSound Matter visualをさらに生成リファレンス画像へ寄せる品質改善を行ってください。
+
+目的：
+
+* ただの非線形図形ではなく、屈折するガラス、液体のコースティクス、有機的な発光膜として見えるようにする
+* 中央オブジェクトに奥行き・厚み・内部反射・複雑な光の重なりを追加する
+* 既存UIの配置・ボタン・Matter selectorは大きく変えない
+* Canvas 2Dのまま可能な限り品質を上げる
+* 必要なら将来のWebGL化に備えた構造に整理する
+
+参照すべき品質：
+
+* 生成リファレンス画像のGlass orbのような、透明な球体内部で青紫の光が屈折している表現
+* 単純な線ではなく、半透明のリボン、白いハイライト、淡い青の反射、紫の内側反射が複数重なる表現
+* Liquidでは、水面下のコースティクスや流体の境界がゆっくり動く表現
+* Bloomでは、単純な花ではなく、半透明膜が重なって発光する表現
+
+追加してほしい表現：
+
+1. Glass
+
+   * 複数の内部レンズレイヤー
+   * 白〜水色のspecular highlight
+   * 青紫のinternal ribbon
+   * 淡いchromatic aberration
+   * 外周rim lightの多重化
+   * 透明な曲線面が重なっているような奥行き
+   * 細い発光フィラメント
+   * ノイズで少し歪んだcaustics線
+
+2. Liquid
+
+   * 水中の光のゆらめき、caustics
+   * 複数の流体境界線
+   * 輪郭のゆるい揺らぎ
+   * 表面に沿うハイライト
+   * rippleの奥行き表現
+   * levelが上がった時だけ波の密度が増える
+
+3. Bloom
+
+   * 花弁を単純な線ではなく、半透明の膜として塗る
+   * 中央の発光コアから外側へ膜が重なる
+   * petalの縁だけが淡く光る
+   * levelに応じて開花量が変わる
+   * capture中はメロディラインが花弁の間を通るようにする
+
+実装方針：
+
+* `drawGlassMatter.ts`, `drawLiquidMatter.ts`, `drawBloomMatter.ts` を中心に改善
+* 可能なら以下の共通関数を追加
+
+  * `drawRefractiveRibbon`
+  * `drawCausticField`
+  * `drawSpecularHighlight`
+  * `drawChromaticRim`
+  * `drawLayeredMembrane`
+  * `drawOrganicContour`
+* globalCompositeOperationを活用する
+
+  * `lighter`
+  * `screen`
+  * `overlay`相当
+  * `source-over`
+* blurを使いすぎてぼやけすぎないようにする
+* 画面全体が重くなりすぎないよう、描画コストに注意する
+* devicePixelRatioを考慮しつつ、スマホでも動くようにする
+
+重要：
+
+* 派手なパーティクルを増やすのではなく、質感を上げる
+* 中央オブジェクトの品の良さを保つ
+* UIテキストや下部ボタンを邪魔しない
+* 生成画像のような「触れそうなガラス/液体/膜」を目指す
+* 実装後はスクショを撮って、参照画像との差分を確認できるようにする
+
+完了条件：
+
+* Glassが明確に「屈折するガラス球」に見える
+* Liquidが明確に「内部で流れる液体球」に見える
+* Bloomが明確に「光る半透明膜の花」に見える
+* 現在よりも生成リファレンス画像に近い高級感がある
+* `npm run build` が通る
+
+---
+
+# 次にやる順番のおすすめ
+
+僕ならCopilotにはこの順で投げる。
+
+```txt
+指示文003：Vercelデプロイ準備
+↓
+スマホでUI確認
+↓
+指示文004：Web Audio + シンセ + デフォルト音源
+↓
+スマホで音が鳴るか確認
+↓
+指示文005：Visual Refinement
+↓
+スクショ比較
+```
+
+ただ、見た目にこだわるなら `005 → 004` でもいい。
+でもスマホで触った時の「音が鳴る」感動は大きいから、**デプロイ後は先に音を入れる**のが良いと思う。
+
+現状はかなりいい。次の山は、**RESONAを“見るもの”から“触って鳴るもの”にすること**。
+
+[1]: https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getUserMedia?utm_source=chatgpt.com "MediaDevices: getUserMedia() method - Web APIs | MDN"
+[2]: https://vercel.com/docs/frameworks/full-stack/nextjs?utm_source=chatgpt.com "Next.js on Vercel"
+[3]: https://nextjs.org/docs/app/api-reference/file-conventions/public-folder?utm_source=chatgpt.com "File-system conventions: public"
+[4]: https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API?utm_source=chatgpt.com "Web Audio API - MDN Web Docs - Mozilla"

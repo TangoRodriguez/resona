@@ -1,0 +1,1239 @@
+# RESONA UI SPEC
+
+## 0. Document purpose
+
+This document defines the visual, interaction, and component specification for **RESONA**, a web-based interactive music app where voice, touch, melody, and synced users become visual matter.
+
+This document should be used together with the reference images in:
+
+```txt
+docs/design/references/01-solo-glass.png
+docs/design/references/02-capture-glass.png
+docs/design/references/03-merge-room.png
+docs/design/references/04-liquid-mode.png
+```
+
+The first implementation goal is to reproduce the visual and interaction language of these images as a static or semi-interactive React/Next.js prototype.
+
+Real audio processing, microphone input, pitch detection, recording, and WebSocket syncing should be added only after the UI foundation is close to the references.
+
+---
+
+# 1. Product concept
+
+## 1.1 One-sentence definition
+
+**RESONA is an interactive web music app where voice and touch are transformed into instrument sounds, melodic traces, loops, and visual matter.**
+
+## 1.2 Core experience
+
+RESONA should feel like:
+
+* You can touch sound.
+* Your voice becomes a visual object.
+* A melody becomes a glowing trace.
+* A captured sound becomes an orbiting loop.
+* Multiple people merge into one shared resonant space.
+* The UI material changes with the sound material.
+
+## 1.3 What RESONA is not
+
+RESONA is not:
+
+* a traditional DAW
+* a piano-roll editor
+* a mixer
+* a waveform editor
+* a generic audio visualizer
+* a flat SaaS dashboard
+* a complicated music production tool
+
+It should not look like Ableton, GarageBand, FL Studio, or a normal recording app.
+
+RESONA is closer to a **touchable musical organism** or **sound-as-material interface**.
+
+---
+
+# 2. Visual language
+
+## 2.1 Keywords
+
+The UI should feel:
+
+* premium
+* futuristic
+* minimal
+* glassmorphic
+* dark
+* immersive
+* interactive
+* blue/purple gradient based
+* calm but powerful
+* healing
+* precise
+* world-class app design
+
+## 2.2 Mood
+
+The mood is not “cyberpunk chaos.”
+It should be more like:
+
+* dark luxury
+* interactive glass
+* glowing sound sculpture
+* healing technology
+* soft sci-fi
+* ambient music instrument
+* Apple-like clarity with more emotional light
+
+## 2.3 Color direction
+
+Primary visual palette:
+
+* deep black
+* deep navy
+* electric blue
+* soft cyan
+* violet
+* purple
+* occasional magenta accent for recording state
+
+Avoid:
+
+* red except subtle recording accents
+* yellow/orange unless future modes need it
+* flat gray dashboard panels
+* harsh neon overload
+* bright white backgrounds
+
+---
+
+# 3. Design tokens
+
+## 3.1 Color tokens
+
+```ts
+export const colors = {
+  bg0: "#02030A",
+  bg1: "#050816",
+  bg2: "#0A1024",
+  bg3: "#101735",
+
+  textPrimary: "#F4F7FF",
+  textSecondary: "#A9B7FF",
+  textMuted: "#6F789B",
+  textFaint: "#3F4867",
+
+  blueCore: "#3B6CFF",
+  blueGlow: "#5EA0FF",
+  cyanGlow: "#7DE7FF",
+
+  purpleCore: "#7A3DFF",
+  violetGlow: "#A06CFF",
+  deepViolet: "#4A1D9B",
+
+  magentaAccent: "#FF5AAE",
+  recordingDot: "#FF4F91",
+
+  glassFill: "rgba(80, 110, 255, 0.10)",
+  glassFillStrong: "rgba(110, 140, 255, 0.18)",
+  glassStroke: "rgba(160, 190, 255, 0.42)",
+
+  panelFill: "rgba(8, 12, 28, 0.72)",
+  panelFillStrong: "rgba(14, 18, 42, 0.86)",
+  panelStroke: "rgba(130, 150, 255, 0.18)",
+
+  buttonBlueStart: "#244DFF",
+  buttonBlueEnd: "#567CFF",
+  buttonPurpleStart: "#5520B8",
+  buttonPurpleEnd: "#9B55FF"
+};
+```
+
+## 3.2 Radius tokens
+
+```ts
+export const radius = {
+  xs: "8px",
+  sm: "12px",
+  md: "18px",
+  lg: "28px",
+  xl: "36px",
+  pill: "999px",
+  orb: "50%"
+};
+```
+
+## 3.3 Glow tokens
+
+```ts
+export const glow = {
+  blueSoft: "0 0 24px rgba(80, 130, 255, 0.42)",
+  blueStrong: "0 0 48px rgba(80, 130, 255, 0.72)",
+
+  purpleSoft: "0 0 24px rgba(140, 80, 255, 0.42)",
+  purpleStrong: "0 0 54px rgba(160, 90, 255, 0.78)",
+
+  cyanSoft: "0 0 24px rgba(125, 231, 255, 0.36)",
+
+  magentaRing: "0 0 36px rgba(255, 90, 174, 0.58)",
+
+  panel: "0 18px 60px rgba(0, 0, 0, 0.45)",
+  button: "0 0 32px rgba(88, 112, 255, 0.55)"
+};
+```
+
+## 3.4 Typography tokens
+
+```ts
+export const typography = {
+  logo: {
+    fontSize: "38px",
+    letterSpacing: "0.28em",
+    fontWeight: 500,
+    lineHeight: 1.1
+  },
+  subtitle: {
+    fontSize: "18px",
+    letterSpacing: "0.02em",
+    fontWeight: 400,
+    lineHeight: 1.35
+  },
+  label: {
+    fontSize: "13px",
+    letterSpacing: "0.08em",
+    fontWeight: 500,
+    textTransform: "uppercase"
+  },
+  body: {
+    fontSize: "15px",
+    fontWeight: 400,
+    lineHeight: 1.5
+  },
+  button: {
+    fontSize: "20px",
+    fontWeight: 600,
+    lineHeight: 1.2
+  },
+  timer: {
+    fontSize: "44px",
+    fontWeight: 400,
+    letterSpacing: "0.02em"
+  }
+};
+```
+
+---
+
+# 4. Core layout
+
+## 4.1 Screen structure
+
+Every main screen should follow this vertical structure:
+
+```txt
+┌─────────────────────────────┐
+│ Status / small controls      │
+│ RESONA logo                  │
+│ mode subtitle                │
+│                              │
+│ Main Sound Matter            │
+│ glass / liquid / merge nodes │
+│                              │
+│ interaction hint / status    │
+│ level / timer / resonance    │
+│                              │
+│ optional loop chips          │
+│ Matter selector              │
+│ Capture / Merge buttons      │
+└─────────────────────────────┘
+```
+
+## 4.2 Mobile-first target
+
+The first UI target is a portrait mobile screen.
+
+Reference aspect:
+
+```txt
+9:16
+```
+
+Preferred app max width:
+
+```css
+max-width: 430px;
+```
+
+The UI should still work responsively on desktop by centering the mobile app shell.
+
+---
+
+# 5. Core screens
+
+## 5.1 Solo Glass screen
+
+Reference:
+
+```txt
+docs/design/references/01-solo-glass.png
+```
+
+### Purpose
+
+The default single-user home screen.
+
+### Header
+
+Title:
+
+```txt
+RESONA
+```
+
+Subtitle:
+
+```txt
+Touch your voice.
+```
+
+### Main visual
+
+The central visual is a large **Glass Matter orb**.
+
+It should look like:
+
+* translucent glass
+* refractive lens
+* blue/violet internal light
+* subtle pink/white highlights
+* internal flowing ribbons
+* soft glow
+* orbital rings around it
+* small glowing dots on rings
+* faint waveform or contour lines in the background
+
+### Interaction hint
+
+Below the orb:
+
+```txt
+Touch / Hum
+```
+
+With a small touch/finger icon.
+
+### Level meter
+
+Below the hint:
+
+* left small waveform icon
+* center segmented level bar
+* right text:
+
+```txt
+LEVEL
+63%
+```
+
+### Matter selector
+
+Three options:
+
+```txt
+Glass
+Liquid
+Bloom
+```
+
+Glass is selected.
+
+### Primary actions
+
+Two large pill buttons:
+
+```txt
+Capture
+Merge
+```
+
+Capture is blue.
+Merge is purple.
+
+### Required state data
+
+```ts
+type SoloGlassState = {
+  mode: "solo";
+  matter: "glass";
+  level: number; // 0 to 1
+  subtitle: "Touch your voice.";
+};
+```
+
+---
+
+## 5.2 Capture screen
+
+Reference:
+
+```txt
+docs/design/references/02-capture-glass.png
+```
+
+### Purpose
+
+The state where RESONA is listening, tracing a melody, and creating loops.
+
+### Header
+
+Title:
+
+```txt
+RESONA
+```
+
+Subtitle:
+
+```txt
+Tracing your melody.
+```
+
+### Main visual
+
+The Glass Matter orb remains central, but now includes active recording feedback:
+
+* magenta/violet recording ring
+* glowing circular progress arc
+* pitch trace line crossing the orb
+* waveform accents on left and right
+* small nodes along the pitch path
+* more active glow than Solo state
+
+### Timer
+
+Display:
+
+```txt
+● 00:08
+```
+
+The dot should be magenta/red-violet.
+The timer should be large, calm, and centered.
+
+### Status text
+
+```txt
+Listening and shaping your melody
+```
+
+### Loop chips
+
+Show loop chips under the timer:
+
+```txt
+LOOPS
+
+Loop 01  00:07  ×
+Loop 02  00:05  ×
+＋
+```
+
+Loop chips are glassmorphic rounded pills.
+
+### Matter selector
+
+Glass remains selected.
+
+### Primary actions
+
+Capture button is active and brighter.
+Merge remains available but secondary.
+
+### Required state data
+
+```ts
+type CaptureState = {
+  mode: "capture";
+  matter: "glass";
+  isRecording: true;
+  elapsedSeconds: number;
+  loops: Array<{
+    id: string;
+    name: string;
+    durationSeconds: number;
+    color: "blue" | "purple" | "magenta";
+  }>;
+};
+```
+
+---
+
+## 5.3 Merge screen
+
+Reference:
+
+```txt
+docs/design/references/03-merge-room.png
+```
+
+### Purpose
+
+The multi-user shared resonance room.
+
+### Header
+
+Title:
+
+```txt
+RESONA
+```
+
+Subtitle:
+
+```txt
+3 people resonating.
+```
+
+### Main visual
+
+The central visual becomes a **resonance network**.
+
+It should include:
+
+* one central shared glass orb
+* three user orbs/nodes connected to it
+* glowing curved lines
+* orbital paths
+* tiny light particles
+* user labels
+* role labels
+
+### User nodes
+
+Mock data:
+
+```ts
+const participants = [
+  { id: "luna", name: "Luna", role: "Vocals", color: "blue" },
+  { id: "kai", name: "Kai", role: "Keys", color: "purple" },
+  { id: "you", name: "You", role: "Ambient", color: "blue" }
+];
+```
+
+### Resonance score
+
+Display:
+
+```txt
+RESONANCE
+72%
+Syncing in harmony
+```
+
+The word **Resonance** is preferred over **Sync Score** in UI.
+
+### Resonance meter
+
+Use vertical glowing bars or waveform bars.
+
+### Matter selector
+
+Glass selected by default.
+
+### Primary actions
+
+Merge button is active and brighter.
+Capture remains available.
+
+### Required state data
+
+```ts
+type MergeState = {
+  mode: "merge";
+  matter: "glass" | "liquid" | "bloom";
+  participants: Participant[];
+  resonance: number; // 0 to 1
+};
+```
+
+---
+
+## 5.4 Liquid screen
+
+Reference:
+
+```txt
+docs/design/references/04-liquid-mode.png
+```
+
+### Purpose
+
+Demonstrates that the UI material changes with the sound material.
+
+### Header
+
+Title:
+
+```txt
+RESONA
+```
+
+Subtitle:
+
+```txt
+Shape sound as liquid.
+```
+
+### Main visual
+
+The central object should become a **Liquid Matter orb**.
+
+It should look like:
+
+* fluid sphere
+* water-like surface
+* soft waves
+* blue/violet gradients
+* ripples
+* refractive highlights
+* less faceted than Glass
+* more organic and flowing
+
+### Matter selector
+
+Liquid is selected.
+
+### Interaction hint
+
+```txt
+Touch / Hum
+```
+
+### Level meter
+
+Same structure as Solo screen.
+
+### Required state data
+
+```ts
+type LiquidState = {
+  mode: "solo";
+  matter: "liquid";
+  level: number;
+  subtitle: "Shape sound as liquid.";
+};
+```
+
+---
+
+# 6. Matter types
+
+## 6.1 MatterType enum
+
+```ts
+export type MatterType = "glass" | "liquid" | "bloom";
+```
+
+Future matter types may include:
+
+```ts
+"crystal" | "gravity" | "particle" | "fabric"
+```
+
+Do not implement future types in the first prototype unless explicitly requested.
+
+---
+
+## 6.2 Glass
+
+### Sound association
+
+* glass bell
+* FM-like tone
+* bright pluck
+* transparent pad
+* crystalline echo
+
+### Visual association
+
+* crystal orb
+* refraction
+* sharp highlights
+* concentric orbit rings
+* thin light paths
+
+### Interaction feel
+
+* tap = glass bell
+* swipe = light scratch / pitch glide
+* hold = frozen tone
+* hum = melody trace inside orb
+
+---
+
+## 6.3 Liquid
+
+### Sound association
+
+* soft pad
+* water drop
+* filtered keys
+* ambient wash
+* gentle reverb
+
+### Visual association
+
+* liquid sphere
+* ripple rings
+* soft wave surface
+* flowing highlights
+* organic distortion
+
+### Interaction feel
+
+* tap = ripple
+* swipe = flowing current
+* hold = sustained drone
+* hum = water surface rises and falls
+
+---
+
+## 6.4 Bloom
+
+### Sound association
+
+* warm pad
+* vocal-like texture
+* soft harmony
+* healing chord
+* breathy tone
+
+### Visual association
+
+* flower-like expansion
+* layered translucent petals
+* soft glowing membranes
+* organic growth
+* radial expansion
+
+### Interaction feel
+
+* tap = small bloom
+* hum = petals expand
+* capture = loop becomes a flower-like orbit
+* merge = multiple blooms overlap
+
+---
+
+# 7. Component map
+
+## 7.1 Recommended structure
+
+```txt
+src/
+  app/
+    page.tsx
+    layout.tsx
+
+  components/
+    resonaui/
+      ResonanceApp.tsx
+      AppShell.tsx
+      Header.tsx
+      TopControls.tsx
+      SoundMatterCanvas.tsx
+      MatterSelector.tsx
+      LevelMeter.tsx
+      PrimaryActions.tsx
+      CaptureTimer.tsx
+      LoopChips.tsx
+      MergeNetwork.tsx
+      ResonanceMeter.tsx
+
+  lib/
+    resonaui/
+      tokens.ts
+      mockState.ts
+      types.ts
+
+    audio/
+      audioEngine.ts
+      pitchDetector.ts
+      melodyTrace.ts
+      scaleQuantize.ts
+      loopRecorder.ts
+
+    visual/
+      matterTypes.ts
+      animationParams.ts
+```
+
+For the first UI prototype, only implement:
+
+```txt
+components/resonaui/*
+lib/resonaui/*
+```
+
+The `audio` and `visual` folders can be stubbed later.
+
+---
+
+## 7.2 Component responsibilities
+
+### ResonanceApp
+
+Owns the main app state.
+
+State:
+
+```ts
+type AppMode = "solo" | "capture" | "merge";
+type MatterType = "glass" | "liquid" | "bloom";
+
+type ResonanceAppState = {
+  mode: AppMode;
+  matter: MatterType;
+  level: number;
+  resonance: number;
+  elapsedSeconds: number;
+  loops: LoopItem[];
+  participants: Participant[];
+};
+```
+
+### AppShell
+
+Provides the mobile app container, background, safe area, and main layout.
+
+### Header
+
+Displays:
+
+* logo
+* subtitle
+* optional left control
+* optional right menu/share control
+
+### SoundMatterCanvas
+
+Displays the central visual matter object.
+
+It should support:
+
+```ts
+type SoundMatterCanvasProps = {
+  mode: AppMode;
+  matter: MatterType;
+  level: number;
+  resonance?: number;
+  isRecording?: boolean;
+};
+```
+
+### MatterSelector
+
+Displays Glass / Liquid / Bloom.
+
+Props:
+
+```ts
+type MatterSelectorProps = {
+  selected: MatterType;
+  onChange: (matter: MatterType) => void;
+};
+```
+
+### LevelMeter
+
+Displays the segmented level bar.
+
+Props:
+
+```ts
+type LevelMeterProps = {
+  level: number;
+};
+```
+
+### PrimaryActions
+
+Displays Capture and Merge buttons.
+
+Props:
+
+```ts
+type PrimaryActionsProps = {
+  mode: AppMode;
+  onCapture: () => void;
+  onMerge: () => void;
+};
+```
+
+### CaptureTimer
+
+Displays recording state and timer.
+
+Props:
+
+```ts
+type CaptureTimerProps = {
+  elapsedSeconds: number;
+  statusText: string;
+};
+```
+
+### LoopChips
+
+Displays captured loops.
+
+Props:
+
+```ts
+type LoopChipsProps = {
+  loops: LoopItem[];
+  onRemove?: (id: string) => void;
+  onAdd?: () => void;
+};
+```
+
+### MergeNetwork
+
+Displays participants and connected resonance orbs.
+
+Props:
+
+```ts
+type MergeNetworkProps = {
+  participants: Participant[];
+  resonance: number;
+};
+```
+
+### ResonanceMeter
+
+Displays resonance percentage and waveform bars.
+
+Props:
+
+```ts
+type ResonanceMeterProps = {
+  resonance: number;
+};
+```
+
+---
+
+# 8. Interaction model
+
+## 8.1 Top-level mode changes
+
+### Capture button
+
+If current mode is `solo`, pressing Capture enters `capture`.
+
+If current mode is `capture`, pressing Capture can stop recording or return to `solo`.
+
+For prototype:
+
+```ts
+solo -> capture
+capture -> solo
+merge -> capture
+```
+
+### Merge button
+
+If current mode is not `merge`, pressing Merge enters `merge`.
+
+For prototype:
+
+```ts
+solo -> merge
+capture -> merge
+merge -> solo
+```
+
+### Matter selector
+
+Changes the current matter type.
+
+Initial matter:
+
+```ts
+"glass"
+```
+
+---
+
+## 8.2 Central object interactions
+
+For the first prototype, visual response can be mocked.
+
+Recommended interactions:
+
+* pointer down: increase glow
+* pointer move: create subtle trace
+* pointer up: return glow
+* long press: pulse ring
+* voice input: not implemented yet, but simulate using level meter animation
+
+---
+
+# 9. Animation direction
+
+## 9.1 General animation principles
+
+Animations should be:
+
+* slow enough to feel premium
+* responsive enough to feel alive
+* not chaotic
+* not game-like
+* not too bouncy
+* soft, glowing, and atmospheric
+
+## 9.2 Suggested animations
+
+### Main orb
+
+* slow rotation
+* internal gradient drift
+* subtle scale breathing
+* shimmer highlights
+* orbital dots moving slowly
+
+### Capture state
+
+* recording ring rotates
+* magenta pulse every second
+* melody trace gently flows
+* timer updates
+
+### Merge state
+
+* connection lines pulse
+* user orbs breathe at slightly different phases
+* central orb grows slightly with resonance
+* resonance bars animate
+
+### Liquid state
+
+* surface ripples
+* slower wave distortion
+* more organic breathing than Glass
+
+---
+
+# 10. Accessibility and usability
+
+## 10.1 Basic requirements
+
+Even though the visual design is dark and atmospheric, the UI must remain readable.
+
+Minimum requirements:
+
+* button labels must be clear
+* active states must not rely only on color
+* touch targets should be at least 44px high
+* main controls should be reachable with thumbs
+* text contrast should be sufficient
+* motion should be subtle enough to avoid discomfort
+
+## 10.2 Reduced motion
+
+Eventually support:
+
+```css
+@media (prefers-reduced-motion: reduce)
+```
+
+In reduced motion:
+
+* stop orbital movement
+* reduce glow pulsing
+* reduce particle animations
+* keep state changes visible through opacity and static rings
+
+---
+
+# 11. Implementation phases
+
+## Phase 0.1: Static UI
+
+Goal:
+
+Recreate the four reference states visually.
+
+Must include:
+
+* Solo Glass
+* Capture Glass
+* Merge Room
+* Liquid Mode
+* state changes using buttons
+* no real audio
+* no networking
+* no storage
+
+## Phase 0.2: Interactive UI mock
+
+Add:
+
+* pointer interactions
+* animated level meter
+* mock recording timer
+* loop chip add/remove
+* animated resonance meter
+* matter transitions
+
+## Phase 0.3: Local audio
+
+Add:
+
+* microphone permission
+* level detection
+* basic pitch detection
+* voice-to-synth mapping
+* local capture mock
+
+## Phase 0.4: Real capture and loop
+
+Add:
+
+* recording
+* back capture
+* loop creation
+* loop playback
+* orbit visualization
+
+## Phase 0.5: Merge room
+
+Add:
+
+* WebSocket room
+* mock synchronized users
+* shared resonance state
+* basic real-time input sharing
+
+---
+
+# 12. First prototype acceptance criteria
+
+The first prototype is acceptable when:
+
+* the screen immediately feels like the reference images
+* the app is clearly recognizable as RESONA
+* the background, glow, orb, panels, and buttons match the premium blue/purple glassmorphism direction
+* Solo / Capture / Merge / Liquid states are visually distinct
+* the UI does not feel like a generic dashboard
+* the UI does not feel like a normal audio recorder
+* the controls are simple and readable
+* the component structure is clean and ready for audio features later
+
+The first prototype is not acceptable if:
+
+* it looks like a standard SaaS app
+* it is too flat
+* it uses too many sliders
+* it looks like a DAW
+* the central visual object is weak
+* the buttons dominate too much
+* the app feels cluttered
+* there is no sense that sound becomes matter
+
+---
+
+# 13. Copy for UI
+
+## Logo
+
+```txt
+RESONA
+```
+
+## Solo subtitles
+
+```txt
+Touch your voice.
+Shape sound as glass.
+Hum into light.
+```
+
+Default:
+
+```txt
+Touch your voice.
+```
+
+## Capture subtitles
+
+```txt
+Tracing your melody.
+Listening and shaping your melody.
+```
+
+Default:
+
+```txt
+Tracing your melody.
+```
+
+## Merge subtitles
+
+```txt
+3 people resonating.
+Syncing in harmony.
+```
+
+Default:
+
+```txt
+3 people resonating.
+```
+
+## Liquid subtitle
+
+```txt
+Shape sound as liquid.
+```
+
+## Main buttons
+
+```txt
+Capture
+Merge
+```
+
+## Matter labels
+
+```txt
+Glass
+Liquid
+Bloom
+```
+
+## Metrics
+
+```txt
+LEVEL
+63%
+
+RESONANCE
+72%
+```
+
+---
+
+# 14. Notes for developers
+
+* Start with static UI.
+* Do not implement microphone first.
+* Do not add complex settings.
+* Do not overbuild audio features before the look is right.
+* The central visual object is the product identity.
+* Every screen should feel like the same product system.
+* Matter types should change both sound association and visual material.
+* Capture and Merge are the two core verbs.
+* Resonance is the preferred public-facing term for multi-user sync quality.

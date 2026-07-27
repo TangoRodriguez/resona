@@ -13,6 +13,9 @@ export type LoopItem = {
   name: string;
   durationSeconds: number;
   color?: LoopColor;
+  matter?: MatterType;
+  url?: string;
+  mimeType?: string;
 };
 
 export type Participant = {

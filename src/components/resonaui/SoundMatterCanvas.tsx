@@ -1,25 +1,23 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { useAnimationFrame } from "@/hooks/useAnimationFrame";
-import { drawGlassMatter } from "@/lib/resonaui/drawGlassMatter";
-import { drawLiquidMatter } from "@/lib/resonaui/drawLiquidMatter";
-import { drawBloomMatter } from "@/lib/resonaui/drawBloomMatter";
-import {
-  createMotion,
-  damp,
-  normalizePitch,
-  palettes,
-  type DrawCtx,
-  type SoundMatterParams
-} from "@/lib/resonaui/visualMatter";
+import dynamic from "next/dynamic";
+import { useRef, useState } from "react";
+import type { TouchPulse3D } from "@/lib/resonaui/matter3d/types";
+import type { SoundMatterParams } from "@/lib/resonaui/visualMatter";
 import styles from "./SoundMatterCanvas.module.css";
+
+const SoundMatterScene = dynamic(() => import("./SoundMatterScene"), {
+  ssr: false,
+  loading: () => <div className={styles.sceneFallback} aria-hidden />
+});
 
 type Props = SoundMatterParams & {
   onPress?: (vertical01: number) => void;
   onHold?: (vertical01: number) => void;
   onRelease?: () => void;
 };
+
+let pulseId = 0;
 
 export function SoundMatterCanvas({
   mode,
@@ -34,110 +32,48 @@ export function SoundMatterCanvas({
   onHold,
   onRelease
 }: Props) {
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const motionRef = useRef(createMotion());
-  const sizeRef = useRef({ w: 0, h: 0, dpr: 1 });
   const [pressed, setPressed] = useState(false);
+  const [touches, setTouches] = useState<TouchPulse3D[]>([]);
   const holdTimerRef = useRef<number | null>(null);
+  const lastPointerRef = useRef<{
+    x: number;
+    y: number;
+    time: number;
+  } | null>(null);
 
-  // Keep the latest params in a ref so the animation loop reads fresh values
-  // without re-subscribing every render. This is the seam where real audio
-  // (mic level / pitch) will flow in later.
-  const paramsRef = useRef<SoundMatterParams>({
-    mode,
-    matter,
-    level,
-    resonance,
-    pitch,
-    pitchConfidence,
-    isRecording,
-    elapsedSeconds
-  });
-  paramsRef.current = {
-    mode,
-    matter,
-    level,
-    resonance,
-    pitch,
-    pitchConfidence,
-    isRecording,
-    elapsedSeconds
+  const addPulse = (
+    x: number,
+    y: number,
+    rect: DOMRect,
+    vx: number,
+    vy: number,
+    strength = 1
+  ) => {
+    const id = pulseId++;
+    const pulse: TouchPulse3D = {
+      id,
+      x: rect.width > 0 ? x / rect.width : 0.5,
+      y: rect.height > 0 ? y / rect.height : 0.5,
+      vx,
+      vy,
+      strength,
+      createdAt: performance.now()
+    };
+    setTouches((prev) => [...prev.slice(-14), pulse]);
+    window.setTimeout(() => {
+      setTouches((prev) => prev.filter((item) => item.id !== id));
+    }, 1300);
   };
 
-  const pressRef = useRef(false);
-  const reducedRef = useRef(false);
-
-  useEffect(() => {
-    reducedRef.current =
-      typeof window !== "undefined" &&
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const resize = () => {
-      const rect = canvas.getBoundingClientRect();
-      const dpr = Math.min(2, window.devicePixelRatio || 1);
-      sizeRef.current = { w: rect.width, h: rect.height, dpr };
-      canvas.width = Math.round(rect.width * dpr);
-      canvas.height = Math.round(rect.height * dpr);
-    };
-    resize();
-
-    const ro = new ResizeObserver(resize);
-    ro.observe(canvas);
-    return () => ro.disconnect();
-  }, []);
-
-  useAnimationFrame((dt) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    const { w, h, dpr } = sizeRef.current;
-    if (w === 0 || h === 0) return;
-
-    const p = paramsRef.current;
-    const m = motionRef.current;
-
-    // Advance the clock (slower when reduced motion is requested).
-    const timeScale = reducedRef.current ? 0.25 : 1;
-    m.time += dt * timeScale;
-
-    // Smooth the audio-driven values so motion stays premium, never jittery.
-    m.energy = damp(m.energy, p.level, 4, dt);
-    m.rec = damp(m.rec, p.isRecording ? 1 : 0, 5, dt);
-    m.pitchNorm = damp(
-      m.pitchNorm,
-      p.pitch ? normalizePitch(p.pitch) : 0.5,
-      6,
-      dt
-    );
-    m.press = damp(m.press, pressRef.current ? 1 : 0, 8, dt);
-
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.clearRect(0, 0, w, h);
-
-    const cx = w / 2;
-    const cy = h / 2;
-    const R = Math.min(w, h) * 0.3;
-
-    const d: DrawCtx = {
-      ctx,
-      cx,
-      cy,
-      R,
-      t: m.time,
-      m,
-      params: p,
-      pal: palettes[p.matter]
-    };
-
-    if (p.matter === "liquid") drawLiquidMatter(d);
-    else if (p.matter === "bloom") drawBloomMatter(d);
-    else drawGlassMatter(d);
-  });
+  const releasePointer = () => {
+    setPressed(false);
+    lastPointerRef.current = null;
+    if (holdTimerRef.current) {
+      window.clearTimeout(holdTimerRef.current);
+      holdTimerRef.current = null;
+    }
+    onRelease?.();
+  };
 
   return (
     <div
@@ -145,41 +81,67 @@ export function SoundMatterCanvas({
       data-pressed={pressed}
       onPointerDown={(e) => {
         const rect = e.currentTarget.getBoundingClientRect();
+        e.currentTarget.setPointerCapture(e.pointerId);
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
         const ny =
           rect.height > 0
-            ? Math.min(1, Math.max(0, (e.clientY - rect.top) / rect.height))
+            ? Math.min(1, Math.max(0, y / rect.height))
             : 0.5;
-        pressRef.current = true;
         setPressed(true);
+        lastPointerRef.current = { x, y, time: performance.now() };
+        addPulse(x, y, rect, 0, -140, 0.95);
         onPress?.(ny);
         if (holdTimerRef.current) window.clearTimeout(holdTimerRef.current);
         holdTimerRef.current = window.setTimeout(() => {
-          if (pressRef.current) onHold?.(ny);
+          onHold?.(ny);
         }, 260);
       }}
-      onPointerUp={() => {
-        pressRef.current = false;
-        setPressed(false);
-        if (holdTimerRef.current) {
-          window.clearTimeout(holdTimerRef.current);
-          holdTimerRef.current = null;
+      onPointerMove={(e) => {
+        if (!pressed) return;
+        const rect = e.currentTarget.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        const now = performance.now();
+        const last = lastPointerRef.current;
+        if (!last) {
+          lastPointerRef.current = { x, y, time: now };
+          return;
         }
-        onRelease?.();
+        const elapsed = Math.max(16, now - last.time);
+        const dx = x - last.x;
+        const dy = y - last.y;
+        const distance = Math.hypot(dx, dy);
+        if (distance > 8 || elapsed > 90) {
+          const vx = (dx / elapsed) * 1000;
+          const vy = (dy / elapsed) * 1000;
+          addPulse(x, y, rect, vx, vy, Math.min(1.28, 0.74 + distance / 82));
+          lastPointerRef.current = { x, y, time: now };
+        }
       }}
+      onPointerUp={releasePointer}
+      onPointerCancel={releasePointer}
       onPointerLeave={() => {
-        pressRef.current = false;
-        setPressed(false);
-        if (holdTimerRef.current) {
-          window.clearTimeout(holdTimerRef.current);
-          holdTimerRef.current = null;
-        }
-        onRelease?.();
+        if (pressed) releasePointer();
       }}
       role="button"
-      aria-label="Sound matter — touch or hum"
+      aria-label="Sound matter - touch or hum"
       tabIndex={0}
     >
-      <canvas ref={canvasRef} className={styles.canvas} aria-hidden />
+      <div className={styles.canvas}>
+        <SoundMatterScene
+          mode={mode}
+          matter={matter}
+          level={level}
+          resonance={resonance}
+          pitch={pitch}
+          pitchConfidence={pitchConfidence}
+          isRecording={isRecording}
+          elapsedSeconds={elapsedSeconds}
+          touches={touches}
+        />
+      </div>
     </div>
   );
 }
+

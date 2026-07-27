@@ -2,11 +2,16 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://resona.vercel.app"),
+  metadataBase: new URL("https://resona-tango.vercel.app"),
   title: "RESONA",
   description:
     "Touch your voice. Sound becomes matter. RESONA is an interactive web music app where voice, touch, melody, and synced users become visual matter.",
   applicationName: "RESONA",
+  icons: {
+    icon: "/icon.svg",
+    shortcut: "/icon.svg",
+    apple: "/icon.svg"
+  },
   appleWebApp: {
     capable: true,
     title: "RESONA",

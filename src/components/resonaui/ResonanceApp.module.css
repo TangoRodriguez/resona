@@ -33,6 +33,14 @@
   gap: 14px;
 }
 
+.error {
+  margin: -2px 4px 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: #ffb8d4;
+  text-align: center;
+}
+
 .footer {
   display: flex;
   flex-direction: column;

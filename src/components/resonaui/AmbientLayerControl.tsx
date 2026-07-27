@@ -2,12 +2,24 @@
 
 import { useState } from "react";
 import type { UseAudioEngine } from "@/hooks/useAudioEngine";
+import type { TransformSettings } from "@/lib/audio/audioEngine";
 import { AudioEnableButton } from "./AudioEnableButton";
 import styles from "./AmbientLayerControl.module.css";
 
 type Props = {
   audio: UseAudioEngine;
 };
+
+const TRANSFORM_CONTROLS: Array<{
+  key: keyof TransformSettings;
+  label: string;
+}> = [
+  { key: "input", label: "Mic Input" },
+  { key: "mix", label: "Transform" },
+  { key: "reverb", label: "Reverb" },
+  { key: "tone", label: "Tone" },
+  { key: "motion", label: "Motion" }
+];
 
 /**
  * Compact Ambient Layer control: a small "Ambient ON/OFF" pill plus an
@@ -140,9 +152,32 @@ export function AmbientLayerControl({ audio }: Props) {
             />
           </label>
 
+          <div className={styles.divider} />
+
+          {TRANSFORM_CONTROLS.map((control) => (
+            <label className={styles.sliderRow} key={control.key}>
+              <span className={styles.sliderHeader}>
+                <span className={styles.rowLabel}>{control.label}</span>
+                <span className={styles.valuePill}>
+                  {Math.round(state.transform[control.key] * 100)}
+                </span>
+              </span>
+              <input
+                type="range"
+                min={0}
+                max={1}
+                step={0.01}
+                value={state.transform[control.key]}
+                onChange={(e) =>
+                  audio.updateTransform(control.key, Number(e.target.value))
+                }
+              />
+            </label>
+          ))}
+
           {activeTrack && (
             <p className={styles.hint}>
-              Tap the matter to play sound. Mic features need HTTPS.
+              Capture records the shaped mic mix. Mic access needs HTTPS.
             </p>
           )}
         </div>

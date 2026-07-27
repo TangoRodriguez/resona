@@ -69,7 +69,7 @@ export function playMatterVoice(opts: VoiceOptions): VoiceHandle {
 
   let attack = 0.012;
   let release = 0.6;
-  let peak = 0.22 * (0.5 + velocity * 0.6);
+  let peak = 0.32 * (0.55 + velocity * 0.75);
 
   if (matter === "glass") {
     // Bright FM-ish bell: sine carrier + detuned sine + high triangle.
@@ -77,7 +77,7 @@ export function playMatterVoice(opts: VoiceOptions): VoiceHandle {
     filter.frequency.value = 220;
     attack = 0.004;
     release = sustain ? 1.4 : 1.1;
-    peak = 0.2 * (0.5 + velocity * 0.6);
+    peak = 0.32 * (0.55 + velocity * 0.78);
 
     const partials: Array<[OscillatorType, number, number]> = [
       ["sine", 1, 1],
@@ -100,7 +100,7 @@ export function playMatterVoice(opts: VoiceOptions): VoiceHandle {
     filter.Q.value = 6;
     attack = sustain ? 0.18 : 0.05;
     release = sustain ? 1.2 : 0.9;
-    peak = 0.24 * (0.5 + velocity * 0.6);
+    peak = 0.36 * (0.55 + velocity * 0.78);
 
     const a = ctx.createOscillator();
     a.type = "sine";
@@ -133,7 +133,7 @@ export function playMatterVoice(opts: VoiceOptions): VoiceHandle {
     filter.Q.value = 1.2;
     attack = sustain ? 0.32 : 0.12;
     release = sustain ? 1.8 : 1.4;
-    peak = 0.16 * (0.5 + velocity * 0.6);
+    peak = 0.28 * (0.55 + velocity * 0.72);
 
     const chord = [1, 5 / 4, 3 / 2, 9 / 4]; // root, maj3rd, 5th, 9th
     for (const ratio of chord) {
