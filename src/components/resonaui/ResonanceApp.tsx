@@ -32,6 +32,12 @@ const loopColorForMatter: Record<MatterType, LoopColor> = {
 
 const matterTypes = ["glass", "liquid", "bloom"] satisfies MatterType[];
 
+const matterCopy: Record<MatterType, string> = {
+  glass: "Crystalline response",
+  liquid: "Fluid harmonic field",
+  bloom: "Organic spectral bloom"
+};
+
 function cloneDefaultState(): ResonanceAppState {
   return {
     ...defaultResonanceState,
@@ -48,6 +54,8 @@ function readMatterQuery(): MatterType | null {
 
 export function ResonanceApp() {
   const [state, setState] = useState<ResonanceAppState>(cloneDefaultState);
+  const [isFocused, setIsFocused] = useState(false);
+  const [infoOpen, setInfoOpen] = useState(false);
   const audio = useAudioEngine();
 
   useEffect(() => {
@@ -56,7 +64,6 @@ export function ResonanceApp() {
     setState((prev) => ({ ...prev, matter }));
   }, []);
 
-  // Mock animated level meter while the real mic is idle.
   useEffect(() => {
     const id = window.setInterval(() => {
       setState((prev) => {
@@ -79,7 +86,6 @@ export function ResonanceApp() {
     audio.syncMicMatter(state.matter);
   }, [audio.syncMicMatter, state.matter]);
 
-  // Mock capture timer.
   useEffect(() => {
     if (state.mode !== "capture") return;
     const id = window.setInterval(() => {
@@ -170,93 +176,155 @@ export function ResonanceApp() {
     });
 
   const subtitle = getSubtitle(state.mode, state.matter);
+  const pitchLabel =
+    audio.state.micEnabled && audio.state.micPitch
+      ? `${Math.round(audio.state.micPitch)} Hz`
+      : "Touch field";
 
   return (
     <AppShell>
-      <div className={styles.app}>
-        <TopControls mode={state.mode} />
+      <div className={styles.app} data-focused={isFocused} data-mode={state.mode}>
+        <TopControls
+          mode={state.mode}
+          isFocused={isFocused}
+          infoOpen={infoOpen}
+          onToggleFocus={() => setIsFocused((value) => !value)}
+          onToggleInfo={() => setInfoOpen((value) => !value)}
+        />
         <Header subtitle={subtitle} />
 
-        <div className={styles.center}>
-          <SoundMatterCanvas
-            mode={state.mode}
-            matter={state.matter}
-            level={state.level}
-            resonance={state.resonance}
-            pitch={audio.state.micEnabled ? audio.state.micPitch : null}
-            pitchConfidence={
-              audio.state.micEnabled ? audio.state.pitchConfidence : 0
-            }
-            isRecording={state.mode === "capture"}
-            elapsedSeconds={state.elapsedSeconds}
-            onPress={(ny) => void audio.tap(state.matter, ny, touchVelocity)}
-            onHold={(ny) => void audio.startDrone(state.matter, ny, touchVelocity)}
-            onRelease={() => audio.stopDrone()}
-          />
+        <div className={styles.workspace}>
+          <section className={styles.stage} aria-label="Interactive sound matter">
+            <div className={styles.stageHeader}>
+              <div>
+                <span className={styles.eyebrow}>Active matter</span>
+                <strong className={styles.matterName}>{state.matter}</strong>
+              </div>
+              <span className={styles.stageDescriptor}>{matterCopy[state.matter]}</span>
+            </div>
 
-          {state.mode === "solo" && (
-            <p className={styles.hint}>
-              <svg
-                className={styles.hintIcon}
-                width="18"
-                height="18"
-                viewBox="0 0 18 18"
-                fill="none"
-                aria-hidden
-              >
-                <path
-                  d="M9 2v9M9 11a2.5 2.5 0 0 0 2.5-2.5V5a2.5 2.5 0 0 0-5 0v3.5A2.5 2.5 0 0 0 9 11Z"
-                  stroke="currentColor"
-                  strokeWidth="1.4"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
+            <div className={styles.center}>
+              <SoundMatterCanvas
+                mode={state.mode}
+                matter={state.matter}
+                level={state.level}
+                resonance={state.resonance}
+                pitch={audio.state.micEnabled ? audio.state.micPitch : null}
+                pitchConfidence={
+                  audio.state.micEnabled ? audio.state.pitchConfidence : 0
+                }
+                isRecording={state.mode === "capture"}
+                elapsedSeconds={state.elapsedSeconds}
+                onPress={(ny) => void audio.tap(state.matter, ny, touchVelocity)}
+                onHold={(ny) => void audio.startDrone(state.matter, ny, touchVelocity)}
+                onRelease={() => audio.stopDrone()}
+              />
+
+              {state.mode === "solo" && (
+                <p className={styles.hint}>
+                  <svg
+                    className={styles.hintIcon}
+                    width="18"
+                    height="18"
+                    viewBox="0 0 18 18"
+                    fill="none"
+                    aria-hidden
+                  >
+                    <path
+                      d="M9 2v9M9 11a2.5 2.5 0 0 0 2.5-2.5V5a2.5 2.5 0 0 0-5 0v3.5A2.5 2.5 0 0 0 9 11Z"
+                      stroke="currentColor"
+                      strokeWidth="1.4"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    <path
+                      d="M4.5 8.5A4.5 4.5 0 0 0 9 13a4.5 4.5 0 0 0 4.5-4.5M9 13v3"
+                      stroke="currentColor"
+                      strokeWidth="1.4"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                  Touch, drag, or hold to shape the sound
+                </p>
+              )}
+
+              {state.mode === "capture" && (
+                <CaptureTimer elapsedSeconds={state.elapsedSeconds} />
+              )}
+            </div>
+
+            <div className={styles.telemetry} aria-label="Live session telemetry">
+              <div className={styles.telemetryItem}>
+                <span>Input</span>
+                <strong>{audio.state.micEnabled ? "Microphone" : "Gesture"}</strong>
+              </div>
+              <div className={styles.telemetryItem}>
+                <span>Signal</span>
+                <strong>{Math.round(state.level * 100)}%</strong>
+              </div>
+              <div className={styles.telemetryItem}>
+                <span>Pitch</span>
+                <strong>{pitchLabel}</strong>
+              </div>
+            </div>
+          </section>
+
+          <aside className={styles.controlRail} aria-label="Sound controls">
+            <div className={styles.railHeading}>
+              <span>Session controls</span>
+              <span>{String(state.loops.length).padStart(2, "0")} layers</span>
+            </div>
+
+            <div className={styles.stack}>
+              {state.mode === "merge" ? (
+                <ResonanceMeter resonance={state.resonance} />
+              ) : (
+                <LevelMeter level={state.level} />
+              )}
+
+              {state.mode !== "merge" && <AmbientLayerControl audio={audio} />}
+
+              {state.mode !== "merge" && (
+                <LoopChips
+                  loops={state.loops}
+                  onRemove={removeLoop}
+                  onAdd={addLoop}
+                  playbackDisabled={audio.state.captureActive}
                 />
-                <path
-                  d="M4.5 8.5A4.5 4.5 0 0 0 9 13a4.5 4.5 0 0 0 4.5-4.5M9 13v3"
-                  stroke="currentColor"
-                  strokeWidth="1.4"
-                  strokeLinecap="round"
-                />
-              </svg>
-              Touch / Hum
-            </p>
-          )}
+              )}
 
-          {state.mode === "capture" && (
-            <CaptureTimer elapsedSeconds={state.elapsedSeconds} />
-          )}
-        </div>
+              {audio.state.error && (
+                <p className={styles.error}>{audio.state.error}</p>
+              )}
+            </div>
 
-        <div className={styles.stack}>
-          {state.mode === "merge" ? (
-            <ResonanceMeter resonance={state.resonance} />
-          ) : (
-            <LevelMeter level={state.level} />
-          )}
+            <div className={styles.footer}>
+              <MatterSelector matter={state.matter} onChange={setMatter} />
+              <PrimaryActions
+                mode={state.mode}
+                onCapture={toggleCapture}
+                onMerge={toggleMerge}
+              />
+            </div>
 
-          {state.mode !== "merge" && <AmbientLayerControl audio={audio} />}
-
-          {state.mode !== "merge" && (
-            <LoopChips
-              loops={state.loops}
-              onRemove={removeLoop}
-              onAdd={addLoop}
-              playbackDisabled={audio.state.captureActive}
-            />
-          )}
-
-          {audio.state.error && (
-            <p className={styles.error}>{audio.state.error}</p>
-          )}
-        </div>
-
-        <div className={styles.footer}>
-          <MatterSelector matter={state.matter} onChange={setMatter} />
-          <PrimaryActions
-            mode={state.mode}
-            onCapture={toggleCapture}
-            onMerge={toggleMerge}
-          />
+            {infoOpen && (
+              <div className={styles.infoPanel} role="status">
+                <div className={styles.infoPanelHeader}>
+                  <span>Interaction map</span>
+                  <span>RESONA / 0.3</span>
+                </div>
+                <p>
+                  Vertical touch position changes pitch. A quick touch triggers a note;
+                  holding sustains a drone. Dragging sends energy through the matter surface.
+                </p>
+                <div className={styles.shortcutGrid}>
+                  <span>Tap / Enter</span><strong>Trigger</strong>
+                  <span>Hold</span><strong>Sustain</strong>
+                  <span>Focus icon</span><strong>Immersive view</strong>
+                </div>
+              </div>
+            )}
+          </aside>
         </div>
       </div>
     </AppShell>
