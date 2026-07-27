@@ -47,6 +47,11 @@
   box-sizing: border-box;
 }
 
+html {
+  color-scheme: dark;
+  background: var(--resona-bg-0);
+}
+
 html,
 body {
   margin: 0;
@@ -65,21 +70,29 @@ body {
 }
 
 body {
-  /* Center the mobile app shell on desktop. */
   display: flex;
   justify-content: center;
   min-height: 100dvh;
-  background: radial-gradient(
-      120% 80% at 50% -10%,
-      rgba(58, 70, 160, 0.35) 0%,
-      rgba(10, 16, 36, 0) 55%
-    ),
-    radial-gradient(
-      100% 60% at 50% 110%,
-      rgba(120, 60, 200, 0.28) 0%,
-      rgba(5, 8, 22, 0) 60%
-    ),
-    var(--resona-bg-0);
+  background:
+    radial-gradient(90% 72% at 18% 12%, rgba(52, 75, 180, 0.28) 0%, rgba(10, 16, 36, 0) 58%),
+    radial-gradient(78% 65% at 90% 92%, rgba(120, 60, 200, 0.24) 0%, rgba(5, 8, 22, 0) 62%),
+    linear-gradient(145deg, #02030a 0%, #050817 52%, #02030a 100%);
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.18;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 140 140' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.32'/%3E%3C/svg%3E");
+  mix-blend-mode: soft-light;
+}
+
+::selection {
+  color: #ffffff;
+  background: rgba(94, 160, 255, 0.48);
 }
 
 button {
@@ -90,10 +103,17 @@ button {
   color: inherit;
 }
 
+button:focus-visible,
+[role="button"]:focus-visible {
+  outline: 2px solid rgba(125, 231, 255, 0.78);
+  outline-offset: 3px;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
   *::after {
+    scroll-behavior: auto !important;
     animation-duration: 0.001ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
