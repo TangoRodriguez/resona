@@ -1,0 +1,9 @@
+{
+  "app": "RESONA",
+  "release": "0.4-realtime-merge-portamento",
+  "features": [
+    "peer-to-peer-merge-rooms",
+    "held-slide-portamento",
+    "reactive-resonance-visuals"
+  ]
+}
