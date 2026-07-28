@@ -2,14 +2,98 @@
   display: flex;
   flex-direction: column;
   flex: 1;
+  min-width: 0;
+}
+
+.workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 16px;
+  align-items: start;
+  flex: 1;
+  min-height: 0;
+}
+
+.stage,
+.controlRail {
+  position: relative;
+  min-width: 0;
+  border: 1px solid rgba(137, 158, 245, 0.14);
+  background: linear-gradient(155deg, rgba(11, 17, 40, 0.62), rgba(4, 7, 19, 0.38));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.045), 0 24px 80px rgba(0, 0, 0, 0.24);
+  backdrop-filter: blur(24px) saturate(1.14);
+}
+
+.stage {
+  overflow: hidden;
+  border-radius: 30px;
+  padding: 16px 14px 14px;
+  isolation: isolate;
+}
+
+.stage::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, transparent 49.7%, rgba(143, 180, 255, 0.045) 50%, transparent 50.3%),
+    linear-gradient(transparent 49.7%, rgba(143, 180, 255, 0.04) 50%, transparent 50.3%),
+    radial-gradient(circle at 50% 43%, rgba(72, 111, 255, 0.12), transparent 46%);
+  background-size: 100% 100%, 100% 100%, 100% 100%;
+}
+
+.stageHeader,
+.railHeading,
+.infoPanelHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.stageHeader {
+  position: relative;
+  z-index: 2;
+  padding: 2px 4px 4px;
+}
+
+.eyebrow,
+.stageDescriptor,
+.railHeading,
+.infoPanelHeader {
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--resona-text-muted);
+}
+
+.eyebrow {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.matterName {
+  display: block;
+  font-size: 13px;
+  font-weight: 550;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--resona-text-primary);
+}
+
+.stageDescriptor {
+  max-width: 50%;
+  text-align: right;
+  line-height: 1.45;
 }
 
 .center {
-  flex: 1;
   display: flex;
   flex-direction: column;
   justify-content: center;
+  min-height: 0;
 }
 
 .hint {
@@ -17,20 +101,81 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  margin: 2px 0 2px;
-  font-size: 15px;
-  letter-spacing: 0.08em;
+  margin: -2px 0 10px;
+  padding: 0 12px;
+  font-size: 12px;
+  letter-spacing: 0.07em;
+  line-height: 1.5;
+  text-align: center;
   color: var(--resona-text-secondary);
 }
 
 .hintIcon {
+  flex: 0 0 auto;
   color: var(--resona-cyan-glow);
+  filter: drop-shadow(0 0 8px rgba(125, 231, 255, 0.4));
+}
+
+.telemetry {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  overflow: hidden;
+  border: 1px solid rgba(143, 164, 255, 0.12);
+  border-radius: 16px;
+  background: rgba(122, 144, 255, 0.1);
+}
+
+.telemetryItem {
+  min-width: 0;
+  padding: 10px 10px 9px;
+  background: rgba(4, 8, 22, 0.76);
+}
+
+.telemetryItem span,
+.telemetryItem strong {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.telemetryItem span {
+  margin-bottom: 4px;
+  font-size: 8px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--resona-text-faint);
+}
+
+.telemetryItem strong {
+  font-size: 10px;
+  font-weight: 520;
+  letter-spacing: 0.04em;
+  color: var(--resona-text-secondary);
+}
+
+.controlRail {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  border-radius: 26px;
+  padding: 15px;
+  transition: opacity 0.35s ease, transform 0.35s ease, visibility 0.35s ease;
+}
+
+.railHeading {
+  padding: 0 2px;
+}
+
+.railHeading span:last-child {
+  color: rgba(125, 231, 255, 0.62);
 }
 
 .stack {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 12px;
 }
 
 .error {
@@ -45,5 +190,111 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
-  margin-top: 4px;
+  margin-top: auto;
+}
+
+.infoPanel {
+  padding: 14px;
+  border-radius: 18px;
+  border: 1px solid rgba(125, 231, 255, 0.16);
+  background: linear-gradient(145deg, rgba(22, 34, 72, 0.66), rgba(7, 10, 25, 0.86));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 16px 40px rgba(0, 0, 0, 0.18);
+  animation: panelIn 0.28s ease both;
+}
+
+.infoPanel p {
+  margin: 12px 0;
+  font-size: 11px;
+  line-height: 1.7;
+  color: var(--resona-text-secondary);
+}
+
+.shortcutGrid {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 7px 12px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(148, 170, 255, 0.12);
+  font-size: 10px;
+  color: var(--resona-text-muted);
+}
+
+.shortcutGrid strong {
+  font-weight: 520;
+  color: var(--resona-text-secondary);
+}
+
+@keyframes panelIn {
+  from {
+    opacity: 0;
+    transform: translateY(-5px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.app[data-focused="true"] .controlRail {
+  display: none;
+}
+
+.app[data-focused="true"] .stage {
+  min-height: calc(100dvh - 190px);
+}
+
+.app[data-focused="true"] .telemetry {
+  opacity: 0.72;
+}
+
+@media (min-width: 760px) {
+  .workspace {
+    grid-template-columns: minmax(0, 1.58fr) minmax(290px, 0.72fr);
+    gap: 20px;
+  }
+
+  .stage {
+    padding: 20px;
+    border-radius: 36px;
+    min-height: min(690px, calc(100dvh - 180px));
+  }
+
+  .controlRail {
+    position: sticky;
+    top: 24px;
+    max-height: calc(100dvh - 48px);
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(118, 142, 232, 0.28) transparent;
+    padding: 18px;
+    border-radius: 30px;
+  }
+
+  .center {
+    min-height: 510px;
+  }
+
+  .telemetryItem {
+    padding: 12px 14px 11px;
+  }
+
+  .telemetryItem strong {
+    font-size: 11px;
+  }
+
+  .app[data-focused="true"] .workspace {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .app[data-focused="true"] .stage {
+    max-width: 880px;
+    width: 100%;
+    margin: 0 auto;
+  }
+}
+
+@media (max-width: 759px) {
+  .stage {
+    background: linear-gradient(155deg, rgba(11, 17, 40, 0.5), rgba(4, 7, 19, 0.24));
+  }
 }
