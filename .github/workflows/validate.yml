@@ -33,3 +33,19 @@ jobs:
 
       - name: Build production app
         run: npm run build
+
+      - name: Verify production deployment
+        if: github.ref == 'refs/heads/main'
+        shell: bash
+        run: |
+          for attempt in {1..18}; do
+            html="$(curl -fsSL --max-time 20 https://resona-tango.vercel.app || true)"
+            if grep -q "Live Merge" <<< "$html"; then
+              echo "Production contains the Live Merge release."
+              exit 0
+            fi
+            echo "Waiting for Vercel production deployment (${attempt}/18)..."
+            sleep 10
+          done
+          echo "::error::Production did not expose the Live Merge release in time."
+          exit 1
