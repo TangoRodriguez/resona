@@ -18,10 +18,10 @@
 .controlRail {
   position: relative;
   min-width: 0;
-  border: 1px solid rgba(137, 158, 245, 0.14);
-  background: linear-gradient(155deg, rgba(11, 17, 40, 0.62), rgba(4, 7, 19, 0.38));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.045), 0 24px 80px rgba(0, 0, 0, 0.24);
-  backdrop-filter: blur(24px) saturate(1.14);
+  border: 1px solid rgba(137, 158, 245, 0.15);
+  background: linear-gradient(155deg, rgba(11, 17, 40, 0.7), rgba(4, 7, 19, 0.42));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 24px 80px rgba(0, 0, 0, 0.28);
+  backdrop-filter: blur(24px) saturate(1.16);
 }
 
 .stage {
@@ -31,17 +31,43 @@
   isolation: isolate;
 }
 
-.stage::before {
+.stage::before,
+.stage::after {
   content: "";
   position: absolute;
   inset: 0;
   z-index: -1;
   pointer-events: none;
+}
+
+.stage::before {
   background:
-    linear-gradient(90deg, transparent 49.7%, rgba(143, 180, 255, 0.045) 50%, transparent 50.3%),
-    linear-gradient(transparent 49.7%, rgba(143, 180, 255, 0.04) 50%, transparent 50.3%),
-    radial-gradient(circle at 50% 43%, rgba(72, 111, 255, 0.12), transparent 46%);
-  background-size: 100% 100%, 100% 100%, 100% 100%;
+    linear-gradient(90deg, transparent 49.7%, rgba(143, 180, 255, 0.05) 50%, transparent 50.3%),
+    linear-gradient(transparent 49.7%, rgba(143, 180, 255, 0.045) 50%, transparent 50.3%),
+    radial-gradient(circle at 50% 43%, rgba(72, 111, 255, 0.15), transparent 48%);
+}
+
+.stage::after {
+  inset: -22%;
+  opacity: 0.54;
+  background: conic-gradient(from 90deg at 50% 46%, transparent, rgba(98, 74, 255, 0.08), transparent 32%, rgba(49, 173, 255, 0.06), transparent 68%);
+  filter: blur(34px);
+  animation: stageAura 16s linear infinite;
+}
+
+.app[data-mode="merge"] .stage {
+  border-color: rgba(160, 108, 255, 0.23);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.055),
+    0 0 0 1px rgba(95, 111, 255, 0.05),
+    0 30px 100px rgba(44, 18, 94, 0.34);
+}
+
+.app[data-mode="merge"] .stage::before {
+  background:
+    linear-gradient(90deg, transparent 49.7%, rgba(177, 126, 255, 0.065) 50%, transparent 50.3%),
+    linear-gradient(transparent 49.7%, rgba(91, 189, 255, 0.05) 50%, transparent 50.3%),
+    radial-gradient(circle at 50% 43%, rgba(114, 67, 255, 0.19), transparent 50%);
 }
 
 .stageHeader,
@@ -84,9 +110,13 @@
 }
 
 .stageDescriptor {
-  max-width: 50%;
+  max-width: 52%;
   text-align: right;
   line-height: 1.45;
+}
+
+.app[data-mode="merge"] .stageDescriptor {
+  color: rgba(191, 168, 255, 0.74);
 }
 
 .center {
@@ -103,33 +133,40 @@
   gap: 8px;
   margin: -2px 0 10px;
   padding: 0 12px;
-  font-size: 12px;
-  letter-spacing: 0.07em;
+  font-size: 11px;
+  letter-spacing: 0.055em;
   line-height: 1.5;
   text-align: center;
   color: var(--resona-text-secondary);
 }
 
-.hintIcon {
+.gestureIcon {
+  display: grid;
   flex: 0 0 auto;
+  width: 19px;
+  height: 19px;
+  place-items: center;
+  border: 1px solid rgba(125, 231, 255, 0.2);
+  border-radius: 50%;
   color: var(--resona-cyan-glow);
-  filter: drop-shadow(0 0 8px rgba(125, 231, 255, 0.4));
+  box-shadow: 0 0 12px rgba(125, 231, 255, 0.12);
+  font-size: 11px;
 }
 
 .telemetry {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 1px;
   overflow: hidden;
-  border: 1px solid rgba(143, 164, 255, 0.12);
+  border: 1px solid rgba(143, 164, 255, 0.13);
   border-radius: 16px;
   background: rgba(122, 144, 255, 0.1);
 }
 
 .telemetryItem {
   min-width: 0;
-  padding: 10px 10px 9px;
-  background: rgba(4, 8, 22, 0.76);
+  padding: 10px 8px 9px;
+  background: rgba(4, 8, 22, 0.79);
 }
 
 .telemetryItem span,
@@ -142,16 +179,16 @@
 
 .telemetryItem span {
   margin-bottom: 4px;
-  font-size: 8px;
-  letter-spacing: 0.14em;
+  font-size: 7px;
+  letter-spacing: 0.13em;
   text-transform: uppercase;
   color: var(--resona-text-faint);
 }
 
 .telemetryItem strong {
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 520;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.035em;
   color: var(--resona-text-secondary);
 }
 
@@ -197,8 +234,8 @@
   padding: 14px;
   border-radius: 18px;
   border: 1px solid rgba(125, 231, 255, 0.16);
-  background: linear-gradient(145deg, rgba(22, 34, 72, 0.66), rgba(7, 10, 25, 0.86));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 16px 40px rgba(0, 0, 0, 0.18);
+  background: linear-gradient(145deg, rgba(22, 34, 72, 0.7), rgba(7, 10, 25, 0.9));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 16px 40px rgba(0, 0, 0, 0.2);
   animation: panelIn 0.28s ease both;
 }
 
@@ -224,15 +261,13 @@
   color: var(--resona-text-secondary);
 }
 
+@keyframes stageAura {
+  to { transform: rotate(360deg); }
+}
+
 @keyframes panelIn {
-  from {
-    opacity: 0;
-    transform: translateY(-5px) scale(0.985);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
+  from { opacity: 0; transform: translateY(-5px) scale(0.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 .app[data-focused="true"] .controlRail {
@@ -244,19 +279,19 @@
 }
 
 .app[data-focused="true"] .telemetry {
-  opacity: 0.72;
+  opacity: 0.76;
 }
 
 @media (min-width: 760px) {
   .workspace {
-    grid-template-columns: minmax(0, 1.58fr) minmax(290px, 0.72fr);
+    grid-template-columns: minmax(0, 1.58fr) minmax(300px, 0.72fr);
     gap: 20px;
   }
 
   .stage {
     padding: 20px;
     border-radius: 36px;
-    min-height: min(690px, calc(100dvh - 180px));
+    min-height: min(720px, calc(100dvh - 180px));
   }
 
   .controlRail {
@@ -270,31 +305,34 @@
     border-radius: 30px;
   }
 
-  .center {
-    min-height: 510px;
-  }
-
-  .telemetryItem {
-    padding: 12px 14px 11px;
-  }
-
-  .telemetryItem strong {
-    font-size: 11px;
-  }
+  .center { min-height: 535px; }
+  .telemetryItem { padding: 12px 14px 11px; }
+  .telemetryItem span { font-size: 8px; }
+  .telemetryItem strong { font-size: 10px; }
 
   .app[data-focused="true"] .workspace {
     grid-template-columns: minmax(0, 1fr);
   }
 
   .app[data-focused="true"] .stage {
-    max-width: 880px;
+    max-width: 940px;
     width: 100%;
     margin: 0 auto;
   }
 }
 
+@media (max-width: 420px) {
+  .telemetry { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .telemetryItem:nth-child(3),
+  .telemetryItem:nth-child(4) { border-top: 1px solid rgba(143, 164, 255, 0.08); }
+}
+
 @media (max-width: 759px) {
   .stage {
-    background: linear-gradient(155deg, rgba(11, 17, 40, 0.5), rgba(4, 7, 19, 0.24));
+    background: linear-gradient(155deg, rgba(11, 17, 40, 0.56), rgba(4, 7, 19, 0.28));
   }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stage::after { animation: none; }
 }
