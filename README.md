@@ -2,6 +2,12 @@
 
 > Touch your voice. Sound becomes matter.
 
+## Open the app
+
+### [Launch RESONA →](https://resona-tango.vercel.app)
+
+Open the HTTPS link above on iPhone, iPad, Android, or desktop. On mobile, tap the audio control or central matter once to unlock sound playback.
+
 RESONA is a mobile-first interactive web music app where **voice, touch, melody, and synced users become visual matter**. Sound is shaped into glass, liquid, or bloom — a luminous central object that reacts to what you do, and (in upcoming phases) to real audio.
 
 Built with **Next.js (App Router) + React 19 + TypeScript** and a custom **Canvas 2D Visual Matter Engine**. Audio uses the **Web Audio API** (no heavy DSP libraries).
@@ -79,7 +85,7 @@ Then in Vercel: **Import Git Repository** → it auto-detects Next.js.
 
 ## Phone testing checklist
 
-- Open the Vercel **HTTPS** URL on your phone.
+- Open [RESONA](https://resona-tango.vercel.app) on your phone.
 - UI should be centered, with no horizontal scroll and no accidental zoom.
 - Tap **Enable Audio** first so sound can play.
 - For future mic features, allow microphone permission (HTTPS only).
