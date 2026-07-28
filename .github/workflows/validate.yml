@@ -53,16 +53,16 @@ jobs:
         if: github.ref == 'refs/heads/main'
         shell: bash
         run: |
-          for attempt in {1..18}; do
-            html="$(curl -fsSL --max-time 20 https://resona-tango.vercel.app || true)"
-            if grep -q "Live Merge" <<< "$html"; then
-              echo "Production contains the Live Merge release."
+          for attempt in {1..24}; do
+            release="$(curl -fsSL --max-time 20 https://resona-tango.vercel.app/release.json || true)"
+            if grep -q "0.4-realtime-merge-portamento" <<< "$release"; then
+              echo "Production exposes the realtime Merge and portamento release marker."
               exit 0
             fi
-            echo "Waiting for Vercel production deployment (${attempt}/18)..."
+            echo "Waiting for Vercel production deployment (${attempt}/24)..."
             sleep 10
           done
-          echo "::error::Production did not expose the Live Merge release in time."
+          echo "::error::Production did not expose the expected release marker in time."
           exit 1
 
       - name: Mark production verification successful
@@ -76,7 +76,7 @@ jobs:
               sha: context.sha,
               state: 'success',
               context: 'production/resona',
-              description: 'Live Merge release is available in production',
+              description: 'Realtime Merge release is available in production',
               target_url: 'https://resona-tango.vercel.app'
             })
 
