@@ -39,10 +39,8 @@ export function PrimaryActions({
         data-active={mode === "capture"}
         onClick={onCapture}
       >
-        <span className={styles.icon}>
-          <CaptureIcon />
-        </span>
-        Capture
+        <span className={styles.icon}><CaptureIcon /></span>
+        {mode === "capture" ? "Stop Capture" : "Capture"}
       </button>
       <button
         type="button"
@@ -50,10 +48,8 @@ export function PrimaryActions({
         data-active={mode === "merge"}
         onClick={onMerge}
       >
-        <span className={styles.icon}>
-          <MergeIcon />
-        </span>
-        Merge
+        <span className={styles.icon}><MergeIcon /></span>
+        {mode === "merge" ? "Leave Merge" : "Live Merge"}
       </button>
     </div>
   );
